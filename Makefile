@@ -1,6 +1,8 @@
 # make -C /lib/modules/$(uname -r)/build M=$(pwd) modules
 
-obj-m += happy_gardenpi_driver.o 
+program_name = hhgd
+
+obj-m += $(program_name).o 
 happy_gardenpi_driver-objs := src/main.o \
 							src/button.o \
 							src/lcd.o \
@@ -21,4 +23,16 @@ all:
 clean: 
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
 
+
+# Utilities for fast testing ...
+insert:
+	sudo insmod $(program_name).ko	 # insert $ make i
+remove:
+	sudo rmmod $(program_name)		# remove $ make r
+print:
+	sudo dmesg				# print  $ make p
+c:
+	sudo dmesg -c		# clear dmesg	 $ make c
+info:
+	sudo modinfo $(program_name).ko #userspace program prints .modinfo section
 
