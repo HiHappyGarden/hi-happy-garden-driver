@@ -56,3 +56,5 @@ build/
 .vscode/configurationCache.log
 .vscode/dryrun.log
 .DS_Store
+
+test/main
