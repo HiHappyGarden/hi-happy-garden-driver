@@ -20,25 +20,25 @@
 #include "gpio_config.h"
 
 
-void hgd_led_init(void)
+void hhgd_led_init(void)
 {
-    hgd_led_set_state(false);
+    hhgd_led_set_state(false);
 }
 
-void hgd_led_set_state(bool state)
+void hhgd_led_set_state(bool state)
 {
-    if(hgd_led_get_state() != state)
+    if(hhgd_led_get_state() != state)
     {
-        gpio_set_value(HGD_GPIO_LED, state);
+        gpio_set_value(HHGD_GPIO_LED, state);
     }
 }
 
-inline void hgd_led_toggle_state(void)
+inline void hhgd_led_toggle_state(void)
 {
-    hgd_led_set_state(!gpio_get_value(HGD_GPIO_LED));
+    hhgd_led_set_state(!gpio_get_value(HHGD_GPIO_LED));
 }
 
-inline bool hgd_led_get_state(void)
+inline bool hhgd_led_get_state(void)
 {
-    return gpio_get_value(HGD_GPIO_LED);
+    return gpio_get_value(HHGD_GPIO_LED);
 }

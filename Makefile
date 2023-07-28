@@ -3,9 +3,8 @@
 program_name = hhgd
 
 obj-m += $(program_name).o 
-happy_gardenpi_driver-objs := src/main.o \
+hhgd-objs := src/main.o \
 							src/button.o \
-							src/lcd.o \
 							src/relay.o \
 							src/gpio_config.o \
 							src/error.o \

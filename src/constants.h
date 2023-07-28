@@ -16,24 +16,24 @@
  */
 
 
-#ifndef _HDG_COSTANTS_
-#define _HDG_COSTANTS_
+#ifndef _HHGD_COSTANTS_
+#define _HHGD_COSTANTS_
 
-#define HGD_NAME "happy_gardenpi_driver" 
-#define HGD_TO_STR(_str) #_str
+#define HHGD_NAME "hhgd" 
+#define HHGD_TO_STR(_str) #_str
 
-typedef unsigned char __u8;
-typedef void* hgd_ptr;
+typedef unsigned char u8;
+typedef void* hhgd_ptr;
 
-enum hgd_type
+enum hhgd_type
 {
-    HGD_LED,
-    HGD_RELAY_1,
-    HGD_RELAY_2,
-    HGD_RELAY_3,
-    HGD_RELAY_4,
-    HGD_BUTTON,
-    HGD_LCD,
+    HHGD_LED,
+    HHGD_RELAY_1,
+    HHGD_RELAY_2,
+    HHGD_RELAY_3,
+    HHGD_RELAY_4,
+    HHGD_BUTTON,
+    HHGD_LCD,
 };
 
 

@@ -41,7 +41,7 @@
 
 #ifdef pr_fmt
 #undef pr_fmt
-#define pr_fmt(fmt) HGD_NAME ": " fmt
+#define pr_fmt(fmt) HHGD_NAME ": " fmt
 #endif
 
 #define DIFF_JIFFIES 25
@@ -55,33 +55,33 @@ unsigned long old_jiffies = 0;
 static struct task_struct *task = NULL;
 
 
-static __u32 gpio_irq_number;
+static u32 gpio_irq_number;
 
 static atomic_t thread_busy = ATOMIC_INIT(0);
 
 static irqreturn_t gpio_irq_handler(int irq, void *dev_id);
 static irqreturn_t gpio_interrupt_thread_fn(int irq, void *dev_id);
 
-bool hgd_button_init(struct hgd_error **error)
+bool hhgd_button_init(struct hhgd_error **error)
 {
   // Get the IRQ number for our GPIO
-  gpio_irq_number = gpio_to_irq(HGD_GPIO_BUTTON);
+  gpio_irq_number = gpio_to_irq(HHGD_GPIO_BUTTON);
 
   if (request_threaded_irq(gpio_irq_number,          // IRQ number
                            (void *)gpio_irq_handler, // IRQ handler (Top half)
                            gpio_interrupt_thread_fn, // IRQ Thread handler (Bottom half)
                            IRQF_TRIGGER_FALLING,     // Handler will be called in raising edge
-                           HGD_NAME,                 // used to identify the device name using this IRQ
+                           HHGD_NAME,                 // used to identify the device name using this IRQ
                            NULL))                    // device id for shared IRQ
   {
-    hgd_error_new(error, HGD_ERROR_GPIO_IRQ, "cannot register IRQ");
+    hhgd_error_new(error, HHGD_ERROR_GPIO_IRQ, "cannot register IRQ");
     return false;
   }
 
   return true;
 }
 
-long hgd_button_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+long hhgd_button_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	if(cmd == REGISTER_UAPP) 
   {
@@ -91,12 +91,12 @@ long hgd_button_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
   return 0;
 }
 
-inline bool hgd_button_get_state(void)
+inline bool hhgd_button_get_state(void)
 {
-  return !gpio_get_value(HGD_GPIO_BUTTON);
+  return !gpio_get_value(HHGD_GPIO_BUTTON);
 }
 
-inline void hgd_button_free(void)
+inline void hhgd_button_free(void)
 {
   if(task != NULL)
   {
@@ -135,9 +135,9 @@ irqreturn_t gpio_irq_handler(int irq, void *dev_id)
 irqreturn_t gpio_interrupt_thread_fn(int irq, void *dev_id)
 {
 
-  for (__u8 i = 0; i < MS_TO_MAINTAIN_CLICK; i++)
+  for (u8 i = 0; i < MS_TO_MAINTAIN_CLICK; i++)
   {
-    if (hgd_button_get_state() == 0)
+    if (hhgd_button_get_state() == 0)
     {
       atomic_sub(1, &thread_busy);
       return IRQ_HANDLED;
@@ -152,7 +152,7 @@ irqreturn_t gpio_interrupt_thread_fn(int irq, void *dev_id)
 
     // Sending signal to app
     memset(&info, 0, sizeof(struct kernel_siginfo));
-    info.si_signo = HGD_SIGETX;
+    info.si_signo = HHGD_SIGETX;
 
     // This is bit of a trickery: SI_QUEUE is normally used by sigqueue from user space,    and kernel space should use SI_KERNEL. 
     // But if SI_KERNEL is used the real_time data  is not delivered to the user space signal handler function. */
@@ -164,7 +164,7 @@ irqreturn_t gpio_interrupt_thread_fn(int irq, void *dev_id)
 
 
 		/* Send the signal */
-		if(send_sig_info(HGD_SIGETX, (struct kernel_siginfo*) &info, task) < 0) 
+		if(send_sig_info(HHGD_SIGETX, (struct kernel_siginfo*) &info, task) < 0) 
 			printk("gpio_irq_signal: Error sending signal\n");
 	}
 

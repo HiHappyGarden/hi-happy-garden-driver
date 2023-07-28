@@ -17,8 +17,8 @@
 
 
 
-#ifndef _HDG_RELAY_
-#define _HDG_RELAY_
+#ifndef _HHGD_RELAY_
+#define _HHGD_RELAY_
 
 #include "constants.h"
 
@@ -27,7 +27,7 @@
 /**
  * @brief Set all port to off
  */
-void hgd_relay_init(void);
+void hhgd_relay_init(void);
 
 /**
  * @brief Turn on/off relay
@@ -35,13 +35,13 @@ void hgd_relay_init(void);
  * @param set true = on
  * @param set false = off
  */
-void hgd_relay_set_state(enum hgd_type relay, bool set);
+void hhgd_relay_set_state(enum hhgd_type relay, bool set);
 
 /**
  * @brief Togle relay
  * 
  */
-void hgd_relay_toggle_state(enum hgd_type relay);
+void hhgd_relay_toggle_state(enum hhgd_type relay);
 
 /**
  * @brief Get actual relay status
@@ -49,7 +49,7 @@ void hgd_relay_toggle_state(enum hgd_type relay);
  * @return true Turn on
  * @return false Turn off
  */
-bool hgd_relay_get_state(enum hgd_type relay);
+bool hhgd_relay_get_state(enum hhgd_type relay);
 
 
 #endif

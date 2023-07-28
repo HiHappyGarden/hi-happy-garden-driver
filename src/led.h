@@ -16,23 +16,16 @@
  */
 
 
-#ifndef _HDG_LED_
-#define _HDG_LED_
+#ifndef _HHGD_LED_
+#define _HHGD_LED_
 
 #include <linux/init.h>
-
-#define HGD_RS_COMMAND_MODE		0   // command mode to select Insruction register with RS signal
-#define HGD_RS_DATA_MODE		1   // data mode to select Data register with RS signal
-
-#define HGD_LCD_FIRST_LINE		1
-#define HGD_LCD_SECOND_LINE		2
-
 
 /**
  * @brief Init led to off
  * 
  */
-void hgd_led_init(void);
+void hhgd_led_init(void);
 
 /**
  * @brief Turn on/off led
@@ -40,20 +33,20 @@ void hgd_led_init(void);
  * @param set true = on
  * @param set false = off
  */
-void hgd_led_set_state(bool set);
+void hhgd_led_set_state(bool set);
 
 /**
- * @brief Togle led
+ * @brief Toggle led
  * 
  */
-void hgd_led_toggle_state(void);
+void hhgd_led_toggle_state(void);
 
 /**
- * @brief Get actula led status
+ * @brief Get actual led status
  * 
  * @return true Turn on
  * @return false Turn off
  */
-bool hgd_led_get_state(void);
+bool hhgd_led_get_state(void);
 
 #endif

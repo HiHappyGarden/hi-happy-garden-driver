@@ -22,7 +22,7 @@
 #include <linux/string.h>
 
 
-#define HGD_STD_FILL_PARSER(_const) \
+#define HHGD_STD_FILL_PARSER(_const) \
         parser->type = _const; \
         long status; \
         long ret = kstrtol (args[1], 10, &status); \
@@ -33,26 +33,26 @@
         parser->status = status; \
         return true; 
 
-bool hgd_parser_params(const char* buff, size_t len, struct hgd_parser* parser)
+bool hhgd_parser_params(const char* buff, size_t len, struct hhgd_parser* parser)
 {
     if (!parser || !buff)
     {
         return false;
     }
 
-    memset(parser, 0, sizeof(struct hgd_parser));
+    memset(parser, 0, sizeof(struct hhgd_parser));
 
-    char args[2][HGD_PARSER_BUFF_MAX] = {
+    char args[2][HHGD_PARSER_BUFF_MAX] = {
         [0] = {0},
         [1] = {0},
     };
 
-    __u8 no_buffer_overflow = 0;
+    u8 no_buffer_overflow = 0;
     bool check = true;
     char* args0_ptr = args[0];
     char* args1_ptr = args[1];
     const char* ptr_after_arg0 = buff; 
-    for(__u8 i = 0; i < len; i++)
+    for(u8 i = 0; i < len; i++)
     {
         if(buff[i] == ' ')
         {
@@ -73,7 +73,7 @@ bool hgd_parser_params(const char* buff, size_t len, struct hgd_parser* parser)
         {
             if(check)
             {
-                if(no_buffer_overflow >= HGD_PARSER_BUFF_MAX)
+                if(no_buffer_overflow >= HHGD_PARSER_BUFF_MAX)
                 {
                     return false;
                 }
@@ -84,7 +84,7 @@ bool hgd_parser_params(const char* buff, size_t len, struct hgd_parser* parser)
             } 
             else
             {
-                if(no_buffer_overflow >= HGD_PARSER_BUFF_MAX)
+                if(no_buffer_overflow >= HHGD_PARSER_BUFF_MAX)
                 {
                     return false;
                 }
@@ -97,35 +97,35 @@ bool hgd_parser_params(const char* buff, size_t len, struct hgd_parser* parser)
         
     }
 
-    if(strncmp(args[0], HGD_TO_STR(HGD_LED), HGD_PARSER_BUFF_MAX) == 0)
+    if(strncmp(args[0], HHGD_TO_STR(HHGD_LED), HHGD_PARSER_BUFF_MAX) == 0)
     {
-        HGD_STD_FILL_PARSER(HGD_LED)
+        HHGD_STD_FILL_PARSER(HHGD_LED)
     }
-    else if(strncmp(args[0], HGD_TO_STR(HGD_BUTTON), HGD_PARSER_BUFF_MAX) == 0)
+    else if(strncmp(args[0], HHGD_TO_STR(HHGD_BUTTON), HHGD_PARSER_BUFF_MAX) == 0)
     {
-        HGD_STD_FILL_PARSER(HGD_BUTTON)
+        HHGD_STD_FILL_PARSER(HHGD_BUTTON)
     }
-    if(strncmp(args[0], HGD_TO_STR(HGD_LCD), HGD_PARSER_BUFF_MAX) == 0)
+    if(strncmp(args[0], HHGD_TO_STR(HHGD_LCD), HHGD_PARSER_BUFF_MAX) == 0)
     {
-        parser->type = HGD_LCD;
+        parser->type = HHGD_LCD;
         strncpy(parser->buff, ptr_after_arg0,  strlen(ptr_after_arg0));
         return true;
     }
-    else if(strncmp(args[0], HGD_TO_STR(HGD_RELAY_1), HGD_PARSER_BUFF_MAX) == 0)
+    else if(strncmp(args[0], HHGD_TO_STR(HHGD_RELAY_1), HHGD_PARSER_BUFF_MAX) == 0)
     {
-        HGD_STD_FILL_PARSER(HGD_RELAY_1)   
+        HHGD_STD_FILL_PARSER(HHGD_RELAY_1)   
     }
-    else if(strncmp(args[0], HGD_TO_STR(HGD_RELAY_2), HGD_PARSER_BUFF_MAX) == 0)
+    else if(strncmp(args[0], HHGD_TO_STR(HHGD_RELAY_2), HHGD_PARSER_BUFF_MAX) == 0)
     {
-        HGD_STD_FILL_PARSER(HGD_RELAY_2)
+        HHGD_STD_FILL_PARSER(HHGD_RELAY_2)
     }
-    else if(strncmp(args[0], HGD_TO_STR(HGD_RELAY_3), HGD_PARSER_BUFF_MAX) == 0)
+    else if(strncmp(args[0], HHGD_TO_STR(HHGD_RELAY_3), HHGD_PARSER_BUFF_MAX) == 0)
     {
-        HGD_STD_FILL_PARSER(HGD_RELAY_3)
+        HHGD_STD_FILL_PARSER(HHGD_RELAY_3)
     }
-    else if(strncmp(args[0], HGD_TO_STR(HGD_RELAY_4), HGD_PARSER_BUFF_MAX) == 0)
+    else if(strncmp(args[0], HHGD_TO_STR(HHGD_RELAY_4), HHGD_PARSER_BUFF_MAX) == 0)
     {
-        HGD_STD_FILL_PARSER(HGD_RELAY_4)
+        HHGD_STD_FILL_PARSER(HHGD_RELAY_4)
     }
     return false;
 }

@@ -15,19 +15,19 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _HDG_PARSER_
-#define _HDG_PARSER_
+#ifndef _HHGD_PARSER_
+#define _HHGD_PARSER_
 #include "constants.h"
 
 #include <linux/init.h>
 
-#define HGD_PARSER_BUFF_MAX (48)
+#define HHGD_PARSER_BUFF_MAX (48)
 
-struct hgd_parser
+struct hhgd_parser
 {
-    enum hgd_type type;
-    char buff[HGD_PARSER_BUFF_MAX];
-    __u8 status;
+    enum hhgd_type type;
+    char buff[HHGD_PARSER_BUFF_MAX];
+    u8 status;
 };
 
 /**
@@ -39,6 +39,6 @@ struct hgd_parser
  * @return true successful
  * @return false fail
  */
-bool hgd_parser_params(const char* buff, size_t len, struct hgd_parser* parser);
+bool hhgd_parser_params(const char* buff, size_t len, struct hhgd_parser* parser);
 
 #endif

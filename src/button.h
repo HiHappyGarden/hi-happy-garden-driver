@@ -16,8 +16,8 @@
  */
 
 
-#ifndef _HDG_BUTTON_
-#define _HDG_BUTTON_
+#ifndef _HHGD_BUTTON_
+#define _HHGD_BUTTON_
 
 #include "error.h"
 
@@ -25,7 +25,7 @@
 #include <linux/module.h>
 #include <linux/ioctl.h>
 
-#define HGD_SIGETX 44
+#define HHGD_SIGETX 44
 
 /**
  * @brief Init button 
@@ -34,14 +34,14 @@
  * @return true if ok
  * @return false if error
  */
-bool hgd_button_init(struct hgd_error **error);
+bool hhgd_button_init(struct hhgd_error **error);
 
 /**
  * @brief To send signal retrived from irq when click
  */
-long hgd_button_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
+long hhgd_button_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
 
-// void hgd_button_release(void);
+// void hhgd_button_release(void);
 
 /**
  * @brief Get actual button status
@@ -49,11 +49,11 @@ long hgd_button_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
  * @return true Turn on
  * @return false Turn off
  */
-bool hgd_button_get_state(void);
+bool hhgd_button_get_state(void);
 
 /**
  * @brief Free button
  */
-void hgd_button_free(void);
+void hhgd_button_free(void);
 
 #endif

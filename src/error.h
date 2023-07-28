@@ -17,8 +17,8 @@
 
 
 
-#ifndef _HDG_ERROR_
-#define _HDG_ERROR_
+#ifndef _HHGD_ERROR_
+#define _HHGD_ERROR_
 
 #include <linux/kernel.h>
 
@@ -27,23 +27,23 @@
 /**
  * @brief Error code 
  */
-enum hgd_error_code
+enum hhgd_error_code
 {
-    HGD_ERROR_NONE,
-    HGD_ERROR_GPIO_NOT_VALID = 1,
-    HGD_ERROR_GPIO_REQUEST,
-    HGD_ERROR_GPIO_DEBOUNCE,
-    HGD_ERROR_GPIO_IRQ,
-    HGD_ERROR_SYS_INFO_SYSFS_CREATE,
-    HGD_ERROR_SYS_INFO_SYSFS_NO_VHEAP,
+    HHGD_ERROR_NONE,
+    HHGD_ERROR_GPIO_NOT_VALID = 1,
+    HHGD_ERROR_GPIO_REQUEST,
+    HHGD_ERROR_GPIO_DEBOUNCE,
+    HHGD_ERROR_GPIO_IRQ,
+    HHGD_ERROR_SYS_INFO_SYSFS_CREATE,
+    HHGD_ERROR_SYS_INFO_SYSFS_NO_VHEAP,
 };
 
 /**
  * @brief Error structure
  */
-struct hgd_error
+struct hhgd_error
 {
-    enum hgd_error_code code;          //!< Error code
+    enum hhgd_error_code code;          //!< Error code
     char msg[MSG_LEN_ERROR_HGD];    //!< Error message
 };
 
@@ -54,7 +54,7 @@ struct hgd_error
  * @return 0 ok 
  * @return 0 error 
  */
-bool hgd_error_new(struct hgd_error** error, enum hgd_error_code code, const char* msg);
+bool hhgd_error_new(struct hhgd_error** error, enum hhgd_error_code code, const char* msg);
 
 /**
  * @brief Prinnt and free error
@@ -63,20 +63,20 @@ bool hgd_error_new(struct hgd_error** error, enum hgd_error_code code, const cha
  * @param msg addtidional message to add if NULL not print nothing
  * @param free 0 not free
  */
-void hgd_error_print(struct hgd_error* error, const char* msg, bool free);
+void hhgd_error_print(struct hhgd_error* error, const char* msg, bool free);
 
 /**
  * @brief Gel last error
  * 
- * @return const struct hgd_error* NULL il no error occured
+ * @return const struct hhgd_error* NULL il no error occured
  */
-const struct hgd_error * hgd_erro_get_last(void);
+const struct hhgd_error * hhgd_erro_get_last(void);
 
 /**
  * @brief Free a rerro
  * 
  * @param error to free
  */
-void hgd_error_free(struct hgd_error** error);
+void hhgd_error_free(struct hhgd_error** error);
 
 #endif

@@ -21,7 +21,7 @@ int main() {
 	printf("PID: %d\n", getpid());
 
 	/* Open the device file */
-	fd = open("/dev/happy_gardenpi_driver", O_RDONLY);
+	fd = open("/dev/hhgd", O_RDONLY);
 	if(fd < 0) {
 		perror("Could not open device file");
 		return -1;

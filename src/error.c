@@ -26,14 +26,14 @@
 
 #ifdef pr_fmt
 #undef pr_fmt
-#define pr_fmt(fmt) HGD_NAME ": " fmt
+#define pr_fmt(fmt) HHGD_NAME ": " fmt
 #endif
 
 
-static struct hgd_error *last_error = NULL;
+static struct hhgd_error *last_error = NULL;
 
 
-bool hgd_error_new(struct hgd_error** error, enum hgd_error_code code, const char* msg)
+bool hhgd_error_new(struct hhgd_error** error, enum hhgd_error_code code, const char* msg)
 {
     if(error == NULL)
     {
@@ -45,7 +45,7 @@ bool hgd_error_new(struct hgd_error** error, enum hgd_error_code code, const cha
         last_error = NULL;
         return false;
     }
-    *error = vmalloc(sizeof(struct hgd_error));
+    *error = vmalloc(sizeof(struct hhgd_error));
     if(!*error)
     {
         last_error = NULL;
@@ -58,7 +58,7 @@ bool hgd_error_new(struct hgd_error** error, enum hgd_error_code code, const cha
     return true;
 }
 
-void hgd_error_print(struct hgd_error* error, const char* msg, _Bool free)
+void hhgd_error_print(struct hhgd_error* error, const char* msg, _Bool free)
 {
     if(error == NULL)
     {
@@ -69,7 +69,7 @@ void hgd_error_print(struct hgd_error* error, const char* msg, _Bool free)
     if(msg)
     {
         static const char fmt[] = "%s: %s code=%u msg=%s";
-        size_t len = strlen(msg) + strlen(fmt) + strlen(HGD_NAME);
+        size_t len = strlen(msg) + strlen(fmt) + strlen(HHGD_NAME);
         char* to_print = vmalloc(len);
         if(!to_print)
         {
@@ -77,7 +77,7 @@ void hgd_error_print(struct hgd_error* error, const char* msg, _Bool free)
         }
         memzero_explicit(to_print, len);
 
-        sprintf(to_print, fmt, HGD_NAME, msg, error->code, error->msg);
+        sprintf(to_print, fmt, HHGD_NAME, msg, error->code, error->msg);
 
         pr_info("%s", to_print);
 
@@ -90,16 +90,16 @@ void hgd_error_print(struct hgd_error* error, const char* msg, _Bool free)
 
     if(free)
     {
-        hgd_error_free(&error);
+        hhgd_error_free(&error);
     }
 }
 
-inline const struct hgd_error * hgd_erro_get_last(void)
+inline const struct hhgd_error * hhgd_erro_get_last(void)
 {
     return last_error;
 }
 
-void hgd_error_free(struct hgd_error** error)
+void hhgd_error_free(struct hhgd_error** error)
 {
     if(*error == NULL)
     {
