@@ -43,7 +43,7 @@ bool hhgd_relay_2 = 0;
 bool hhgd_relay_3 = 0;
 bool hhgd_relay_4 = 0;
 bool hhgd_button = 0;
-bool hhgd_lcd = 0;
+char hhgd_lcd[34] = { [0 ... 33] = 0 };
 
 
 
@@ -126,13 +126,15 @@ ssize_t hhgd_ioctl_read(struct file *filp, char __user *buff, size_t count, loff
                     "HHGD_RELAY_1:\t%u\n"
                     "HHGD_RELAY_2:\t%u\n"
                     "HHGD_RELAY_3:\t%u\n"
-                    "HHGD_RELAY_4:\t%u\n",
+                    "HHGD_RELAY_4:\t%u\n"
+                    "HHGD_LCD:\t%s\n",
                     hhgd_led,
                     99, 
                     hhgd_relay_1,
                     hhgd_relay_2,
                     hhgd_relay_3,
-                    hhgd_relay_4
+                    hhgd_relay_4,
+                    hhgd_lcd
     );
 
     pr_info("%s", msg);
@@ -147,10 +149,10 @@ ssize_t hhgd_ioctl_read(struct file *filp, char __user *buff, size_t count, loff
 
 /*
 ** This function will be called when we write the Device file
+*  echo "HHGD_RELAY_1 1" > /dev/hhgd
 */
 ssize_t hhgd_ioctl_write(struct file *filp, const char __user *buff, size_t len, loff_t *off)
 {
-    pr_info("--->1\n");
     len--;
     if (len > HHGD_PARSER_BUFF_MAX)
     {
@@ -170,43 +172,82 @@ ssize_t hhgd_ioctl_write(struct file *filp, const char __user *buff, size_t len,
         return -EINVAL;
     }
 
-    kfree(params);
-
-
- pr_info("--->2\n");
     struct hhgd_parser parsed;
     if (!hhgd_parser_params(params, len, &parsed))
     {
-
         pr_err("Parsing error");
-        return ENOEXEC;
+        kfree(params);
+        return -ENOEXEC;
     }
+    
+    kfree(params);
+
 
     switch (parsed.type)
     {
     case HHGD_LED:
-        pr_info("HHGD_LED: %u\n", parsed.status);
         //hhgd_led_set_state(parsed.status);
-        return len;
+        hhgd_relay_1 = parsed.status;
+        break;
     case HHGD_BUTTON:
-        return len;
+        break;
     case HHGD_RELAY_1:
+        hhgd_relay_1 = parsed.status;
+        break;
     case HHGD_RELAY_2:
+        hhgd_relay_2 = parsed.status;
+        break;
     case HHGD_RELAY_3:
+        hhgd_relay_3 = parsed.status;
+        break;
     case HHGD_RELAY_4:
-        pr_info("HHGD_RELAY_%u: %u\n", parsed.type, parsed.status);
-        //hhgd_relay_set_state(parsed.type, parsed.status);
-        return len;
+        hhgd_relay_4 = parsed.status;
+        break;
     case HHGD_LCD:
-        pr_info("HHGD_RELAY_%u: %u\n", parsed.type, parsed.status);
-        return len;
+        strncpy(hhgd_lcd, parsed.buff, sizeof(hhgd_lcd));
+        break;
     }
 
-    return -EINVAL;
+    len++;
+    return len;
 }
 
 long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long arg)
 {
+    
+
+    // if(value == NULL)
+    // {
+    //     pr_err("Value NULL");
+    //     return -EINVAL;
+    // }
+
+    // switch (ioctl_command)
+    // {
+    // case HHGD_LED:
+    // {
+    //     const u8* value = (const u8*)arg;
+    //     hhgd_led = *value;
+    //     break;
+    // }
+        
+    // case HHGD_BUTTON:
+    //     break;
+    // case HHGD_RELAY_1:
+    //     hhgd_relay_1 = *value;
+    //     break;
+    // case HHGD_RELAY_2:
+    //     hhgd_relay_2 = *value;
+    //     break;
+    // case HHGD_RELAY_3:
+    //     hhgd_relay_3 = *value;
+    //     break;
+    // case HHGD_RELAY_4:
+    //     hhgd_relay_4 = *value;
+    //     break;
+    // case HHGD_LCD:
+    //     break;
+    // }
 
     return 0;
 }

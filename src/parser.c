@@ -37,7 +37,7 @@ bool hhgd_parser_params(const char* buff, size_t len, struct hhgd_parser* parser
 {
     if (!parser || !buff)
     {
-        return true;
+        return false;
     }
 
     memset(parser, 0, sizeof(struct hhgd_parser));
@@ -109,7 +109,6 @@ bool hhgd_parser_params(const char* buff, size_t len, struct hhgd_parser* parser
     {
         parser->type = HHGD_LCD;
         strncpy(parser->buff, ptr_after_arg0,  strlen(ptr_after_arg0));
-        return true;
     }
     else if(strncmp(args[0], HHGD_TO_STR(HHGD_RELAY_1), HHGD_PARSER_BUFF_MAX) == 0)
     {
@@ -127,5 +126,5 @@ bool hhgd_parser_params(const char* buff, size_t len, struct hhgd_parser* parser
     {
         HHGD_STD_FILL_PARSER(HHGD_RELAY_4)
     }
-    return false;
+    return true;
 }
