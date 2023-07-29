@@ -50,3 +50,11 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+build/
+.vscode/targets.log
+.vscode/configurationCache.log
+.vscode/dryrun.log
+.DS_Store
+
+test/main
