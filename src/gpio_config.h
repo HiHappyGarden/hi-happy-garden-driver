@@ -48,15 +48,15 @@
 
 struct hhgd_gpio_config
 {
-    short led_green;
-    short led_red  ;
-    short relay_in1;
-    short relay_in2;
-    short relay_in3;
-    short relay_in4;
-    short button_next;
-    short button_before;
-    short lcd_power;
+    short* led_green;
+    short* led_red  ;
+    short* relay_in1;
+    short* relay_in2;
+    short* relay_in3;
+    short* relay_in4;
+    short* button_next;
+    short* button_before;
+    short* lcd_power;
 };
 
 /**
@@ -66,7 +66,7 @@ struct hhgd_gpio_config
  * @return 0 init correctly
  * @return false some error
  */
-bool hhgd_gpio_config_init(const struct hhgd_gpio_config* config, struct hhgd_error** error);
+bool hhgd_gpio_config_init(const struct hhgd_gpio_config* config, struct hhgd_error** error) __attribute__((nonnull (1)));
 
 /**
  * @brief Free pin config

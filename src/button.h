@@ -28,6 +28,8 @@
 
 #define HHGD_SIGETX 44
 
+struct hhgd_gpio_config;
+
 /**
  * @brief Init button 
  * 
@@ -35,7 +37,7 @@
  * @return true if ok
  * @return false if error
  */
-bool hhgd_button_init(const struct hhgd_gpio_config* config, struct hhgd_error **error);
+bool hhgd_button_init(const struct hhgd_gpio_config* config, struct hhgd_error **error)  __attribute__((nonnull (1)));
 
 /**
  * @brief To send signal retrived from irq when click

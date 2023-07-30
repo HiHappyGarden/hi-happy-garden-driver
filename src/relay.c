@@ -19,28 +19,37 @@
 #include "relay.h"
 #include "gpio_config.h"
 
+static short* gpio_relay_in1;
+static short* gpio_relay_in2;
+static short* gpio_relay_in3;
+static short* gpio_relay_in4;
+
 static u8 get_relay_gpio(enum hhgd_type relay)
 {
     switch (relay)
     {
     case HHGD_RELAY_IN1:
-        return HHGD_GPIO_RELEAY_IN1;
+        return gpio_relay_in1;
     case HHGD_RELAY_IN2:
-        return HHGD_GPIO_RELEAY_IN2;
+        return gpio_relay_in2;
     case HHGD_RELAY_IN3:
-        return HHGD_GPIO_RELEAY_IN3;
+        return gpio_relay_in3;
     case HHGD_RELAY_IN4:
-        return HHGD_GPIO_RELEAY_IN4;
+        return gpio_relay_in4;
     default:
         return 0;
     }
 }
-void hhgd_relay_init(void)
+void hhgd_relay_init(const struct hhgd_gpio_config* config)
 {
-    hhgd_relay_set_state(HHGD_RELAY_IN1, false);
-    hhgd_relay_set_state(HHGD_RELAY_IN2, false);
-    hhgd_relay_set_state(HHGD_RELAY_IN3, false);
-    hhgd_relay_set_state(HHGD_RELAY_IN4, false);
+    gpio_relay_in1 = config->relay_in1;
+    gpio_relay_in2 = config->relay_in2;
+    gpio_relay_in3 = config->relay_in3;
+    gpio_relay_in4 = config->relay_in4;
+    hhgd_relay_set_state(*gpio_relay_in1, false);
+    hhgd_relay_set_state(*gpio_relay_in2, false);
+    hhgd_relay_set_state(*gpio_relay_in3, false);
+    hhgd_relay_set_state(*gpio_relay_in4, false);
 }
 
 void hhgd_relay_set_state(enum hhgd_type relay, bool state)

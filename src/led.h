@@ -23,11 +23,13 @@
 
 #include <linux/init.h>
 
+struct hhgd_gpio_config;
+
 /**
  * @brief Init led to off
  * 
  */
-void hhgd_led_init(const struct hhgd_gpio_config* config);
+void hhgd_led_init(const struct hhgd_gpio_config* config) __attribute__((nonnull (1)));
 
 /**
  * @brief Turn on/off led

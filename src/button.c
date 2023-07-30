@@ -54,33 +54,34 @@ unsigned long old_jiffies = 0;
 #define REGISTER_UAPP _IO('R', 'g')
 static struct task_struct *task = NULL;
 
-static short gpio_button_next;
-static short gpio_button_before;
+static short* gpio_button_next;
+static short* gpio_button_before;
 
 static u32 gpio_irq_number_next;
 static u32 gpio_irq_number_before;
 
 static atomic_t thread_busy = ATOMIC_INIT(0);
 
+
+
+
 static irqreturn_t gpio_irq_handler(int irq, void *dev_id);
-static irqreturn_t gpio_interrupt_thread_fn(int irq, void *dev_id);
 
-bool hhgd_button_init(const struct hhgd_gpio_config* _config, struct hhgd_error **error)
+static irqreturn_t button_next_gpio_interrupt_thread_fn(int irq, void *dev_id);
+static irqreturn_t button_before_gpio_interrupt_thread_fn(int irq, void *dev_id);
+static irqreturn_t gpio_interrupt_thread_fn(enum hhgd_type type, int irq, void *dev_id);
+
+bool hhgd_button_init(const struct hhgd_gpio_config* config, struct hhgd_error **error)
 {
-  if(config == NULL)
-  {
-      return false;
-  }
-
   gpio_button_next = config->button_next;
   gpio_button_before = config->button_before;
 
   // Get the IRQ number for our GPIO
-  gpio_irq_number_next = gpio_to_irq(gpio_button_next);
+  gpio_irq_number_next = gpio_to_irq(*gpio_button_next);
 
   if (request_threaded_irq(gpio_irq_number_next,          // IRQ number
-                           (void *)gpio_irq_handler, // IRQ handler (Top half)
-                           gpio_interrupt_thread_fn, // IRQ Thread handler (Bottom half)
+                           gpio_irq_handler, // IRQ handler (Top half)
+                           button_next_gpio_interrupt_thread_fn, // IRQ Thread handler (Bottom half)
                            IRQF_TRIGGER_FALLING,     // Handler will be called in raising edge
                            HHGD_DRIVER_NAME,         // used to identify the device name using this IRQ
                            NULL))                    // device id for shared IRQ
@@ -89,11 +90,11 @@ bool hhgd_button_init(const struct hhgd_gpio_config* _config, struct hhgd_error 
     return false;
   }
 
-  gpio_irq_number_before = gpio_to_irq(gpio_button_next);
+  gpio_irq_number_before = gpio_to_irq(*gpio_button_next);
 
   if (request_threaded_irq(gpio_irq_number_before,   // IRQ number
-                           (void *)gpio_irq_handler, // IRQ handler (Top half)
-                           gpio_interrupt_thread_fn, // IRQ Thread handler (Bottom half)
+                           gpio_irq_handler, // IRQ handler (Top half)
+                           button_before_gpio_interrupt_thread_fn, // IRQ Thread handler (Bottom half)
                            IRQF_TRIGGER_FALLING,     // Handler will be called in raising edge
                            HHGD_DRIVER_NAME,         // used to identify the device name using this IRQ
                            NULL))                    // device id for shared IRQ
@@ -121,7 +122,7 @@ bool hhgd_button_get_state(enum hhgd_type type)
   {
   case HHGD_BUTTON_NEXT:
     return !gpio_get_value(gpio_irq_number_next);
-  case HHGD_BUTTON_NEXT:
+  case HHGD_BUTTON_BEFORE:
     return !gpio_get_value(gpio_irq_number_before);
   default:
     return false;
@@ -137,6 +138,7 @@ inline void hhgd_button_free(void)
   free_irq(gpio_irq_number_next, NULL);
   free_irq(gpio_irq_number_before, NULL);
 }
+
 
 // Interrupt handler for GPIO 25. This will be called whenever there is a raising edge detected.
 irqreturn_t gpio_irq_handler(int irq, void *dev_id)
@@ -165,12 +167,23 @@ irqreturn_t gpio_irq_handler(int irq, void *dev_id)
   return IRQ_WAKE_THREAD;
 }
 
-irqreturn_t gpio_interrupt_thread_fn(int irq, void *dev_id)
+
+inline irqreturn_t button_next_gpio_interrupt_thread_fn(int irq, void *dev_id)
+{
+  return gpio_interrupt_thread_fn(HHGD_BUTTON_NEXT, irq, dev_id);
+}
+
+inline irqreturn_t button_before_gpio_interrupt_thread_fn(int irq, void *dev_id)
+{
+  return gpio_interrupt_thread_fn(HHGD_BUTTON_BEFORE, irq, dev_id);
+}
+
+irqreturn_t gpio_interrupt_thread_fn(enum hhgd_type type, int irq, void *dev_id)
 {
 
   for (u8 i = 0; i < MS_TO_MAINTAIN_CLICK; i++)
   {
-    if (hhgd_button_get_state() == 0)
+    if (hhgd_button_get_state(type) == 0)
     {
       atomic_sub(1, &thread_busy);
       return IRQ_HANDLED;

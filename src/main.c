@@ -357,15 +357,15 @@ int __init hhgd_driver_init(void)
 
     struct hhgd_gpio_config gpio_config = 
     {
-        .led_green      = gpio_led_green,
-        .led_red        = gpio_led_red,
-        .relay_in1      = gpio_relay_in1,
-        .relay_in2      = gpio_relay_in2,
-        .relay_in3      = gpio_relay_in3,
-        .relay_in4      = gpio_relay_in4,
-        .button_next    = gpio_button_next,
-        .button_before  = gpio_button_before,
-        .lcd_power      = gpio_lcd_power
+        .led_green      = &gpio_led_green,
+        .led_red        = &gpio_led_red,
+        .relay_in1      = &gpio_relay_in1,
+        .relay_in2      = &gpio_relay_in2,
+        .relay_in3      = &gpio_relay_in3,
+        .relay_in4      = &gpio_relay_in4,
+        .button_next    = &gpio_button_next,
+        .button_before  = &gpio_button_before,
+        .lcd_power      = &gpio_lcd_power
     };
 
 
@@ -390,7 +390,7 @@ int __init hhgd_driver_init(void)
     hhgd_led_init(&gpio_config);
 
     pr_info("Realy driver start");
-    hhgd_relay_init();
+    hhgd_relay_init(&gpio_config);
 
     return 0;
 

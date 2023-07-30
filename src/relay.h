@@ -24,10 +24,12 @@
 
 #include <linux/init.h>
 
+struct hhgd_gpio_config;
+
 /**
  * @brief Set all port to off
  */
-void hhgd_relay_init(void);
+void hhgd_relay_init(const struct hhgd_gpio_config* config) __attribute__((nonnull (1)));
 
 /**
  * @brief Turn on/off relay

@@ -64,7 +64,7 @@ bool hhgd_error_new(struct hhgd_error** error, enum hhgd_error_code code, const 
  * @param msg addtidional message to add if NULL not print nothing
  * @param free 0 not free
  */
-void hhgd_error_print(struct hhgd_error* error, const char* msg, bool free);
+void hhgd_error_print(struct hhgd_error* error, const char* msg, bool free)  __attribute__((nonnull (1)));
 
 /**
  * @brief Gel last error
