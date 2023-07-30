@@ -20,6 +20,7 @@
 #define _HHGD_BUTTON_
 
 #include "error.h"
+#include "constants.h"
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -34,7 +35,7 @@
  * @return true if ok
  * @return false if error
  */
-bool hhgd_button_init(struct hhgd_error **error);
+bool hhgd_button_init(const struct hhgd_gpio_config* config, struct hhgd_error **error);
 
 /**
  * @brief To send signal retrived from irq when click
@@ -49,7 +50,7 @@ long hhgd_button_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
  * @return true Turn on
  * @return false Turn off
  */
-bool hhgd_button_get_state(void);
+bool hhgd_button_get_state(enum hhgd_type type);
 
 /**
  * @brief Free button

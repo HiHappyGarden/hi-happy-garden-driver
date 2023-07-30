@@ -19,13 +19,15 @@
 #ifndef _HHGD_LED_
 #define _HHGD_LED_
 
+#include "constants.h"
+
 #include <linux/init.h>
 
 /**
  * @brief Init led to off
  * 
  */
-void hhgd_led_init(void);
+void hhgd_led_init(const struct hhgd_gpio_config* config);
 
 /**
  * @brief Turn on/off led
@@ -33,13 +35,13 @@ void hhgd_led_init(void);
  * @param set true = on
  * @param set false = off
  */
-void hhgd_led_set_state(bool set);
+void hhgd_led_set_state(enum hhgd_type type, bool set);
 
 /**
  * @brief Toggle led
  * 
  */
-void hhgd_led_toggle_state(void);
+void hhgd_led_toggle_state(enum hhgd_type type);
 
 /**
  * @brief Get actual led status
@@ -47,6 +49,6 @@ void hhgd_led_toggle_state(void);
  * @return true Turn on
  * @return false Turn off
  */
-bool hhgd_led_get_state(void);
+bool hhgd_led_get_state(enum hhgd_type type);
 
 #endif

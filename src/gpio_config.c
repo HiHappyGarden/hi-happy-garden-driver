@@ -19,36 +19,64 @@
 
 #include <linux/init.h>
 
-#define HHGD_IS_VALID(gpio, msg) \
-    if (gpio_is_valid(gpio) == false) \
-    { \
-        hhgd_error_new(error, HHGD_ERROR_GPIO_NOT_VALID, msg); \
-        return false; \
-    } 
-#define HHGD_REQUEST(gpio, msg) \
-    if (gpio_request(gpio, #gpio) < 0) \
-    { \
-        hhgd_error_new(error, HHGD_ERROR_GPIO_REQUEST, msg); \
-        return false; \
-    }
+static struct hhgd_gpio_config config;
 
-static bool hhgd_gpio_consig_is_valid(struct hhgd_error** error);
-static bool hhgd_gpio_config_request(struct hhgd_error** error);
 
-bool hhgd_gpio_config_init(struct hhgd_error** error)
+static bool hhg_lcd_pin_out_setup(u8 gpio_number, u8 gpio_direction, struct hhgd_error** error);
+static bool hhg_lcd_pin_in_setup(u8 gpio_number, struct hhgd_error** error);
+
+bool hhgd_gpio_config_init(const struct hhgd_gpio_config* _config, struct hhgd_error** error)
 {
-    if (hhgd_gpio_consig_is_valid(error) == false)
+    if(config == NULL)
     {
-        goto r_gpio;
+        return false;
     }
-    
+    memcpy(&config, _config);
 
-    if (hhgd_gpio_config_request(error) == false)
+    if(!hhg_lcd_pin_out_setup(config.led_green, 0, error))
     {
-        goto r_gpio;
+        return false;
     }
 
-    gpio_direction_input(HHGD_GPIO_BUTTON);
+    if(!hhg_lcd_pin_out_setup(config.led_red, 0, error))
+    {
+        return false;
+    }
+
+    if(!hhg_lcd_pin_out_setup(config.relay_in1, 0, error))
+    {
+        return false;
+    }
+
+    if(!hhg_lcd_pin_out_setup(config.relay_in2, 0, error))
+    {
+        return false;
+    }
+
+    if(!hhg_lcd_pin_out_setup(config.relay_in3, 0, error))
+    {
+        return false;
+    }
+
+    if(!hhg_lcd_pin_out_setup(config.relay_in4, 0, error))
+    {
+        return false;
+    }
+
+    if(!hhg_lcd_pin_out_setup(config.lcd_power, 0, error))
+    {
+        return false;
+    }
+
+    if(!hhg_lcd_pin_in_setup(config.button_next, error))
+    {
+        return false;
+    }
+
+    if(!hhg_lcd_pin_in_setup(config.button_before, error))
+    {
+        return false;
+    }
 
 #ifdef EN_DEBOUNCE
   //Debounce the button with a delay of 200ms
@@ -61,28 +89,6 @@ bool hhgd_gpio_config_init(struct hhgd_error** error)
   }
 #endif
 
-    gpio_direction_output(HHGD_GPIO_LED, 0);
-    gpio_direction_output(HHGD_GPIO_RELEAY_IN1, 0);
-    gpio_direction_output(HHGD_GPIO_RELEAY_IN2, 0);
-    gpio_direction_output(HHGD_GPIO_RELEAY_IN3, 0);
-    gpio_direction_output(HHGD_GPIO_RELEAY_IN4, 0);
-    gpio_direction_output(HHGD_GPIO_LED_BL, 0);
-
-    /* Using this call the GPIO 21 will be visible in /sys/class/gpio/
-     ** Now you can change the gpio values by using below commands also.
-     ** echo 1 > /sys/class/gpio/gpio21/value  (turn ON the LED)
-     ** echo 0 > /sys/class/gpio/gpio21/value  (turn OFF the LED)
-     ** cat /sys/class/gpio/gpio21/value  (read the value LED)
-     **
-     ** the second argument prevents the direction from being changed.
-     */
-    gpio_export(HHGD_GPIO_BUTTON, false);
-    gpio_export(HHGD_GPIO_LED, false);
-    gpio_export(HHGD_GPIO_RELEAY_IN1, false);
-    gpio_export(HHGD_GPIO_RELEAY_IN2, false);
-    gpio_export(HHGD_GPIO_RELEAY_IN3, false);
-    gpio_export(HHGD_GPIO_RELEAY_IN4, false);
-    gpio_export(HHGD_GPIO_LED_BL, false);
     return true;
 
 r_gpio:
@@ -93,48 +99,94 @@ r_gpio:
 
 void hhgd_gpio_config_unexport(void)
 {
-    gpio_unexport(HHGD_GPIO_BUTTON);
-    gpio_unexport(HHGD_GPIO_LED);
-    gpio_unexport(HHGD_GPIO_RELEAY_IN1);
-    gpio_unexport(HHGD_GPIO_RELEAY_IN2);
-    gpio_unexport(HHGD_GPIO_RELEAY_IN3);
-    gpio_unexport(HHGD_GPIO_RELEAY_IN4);
-    gpio_unexport(HHGD_GPIO_LED_BL);
+    gpio_unexport(config.led_green);
+    gpio_unexport(config.led_red);
+    gpio_unexport(config.relay_in1);
+    gpio_unexport(config.relay_in2);
+    gpio_unexport(config.relay_in3);
+    gpio_unexport(config.relay_in4);
+    gpio_unexport(config.button_next);
+    gpio_unexport(config.button_before);
+    gpio_unexport(config.lcd_power);
 }
 
 void hhgd_gpio_config_free(void)
 {
-    gpio_free(HHGD_GPIO_BUTTON);
-    gpio_free(HHGD_GPIO_LED);
-    gpio_free(HHGD_GPIO_RELEAY_IN1);
-    gpio_free(HHGD_GPIO_RELEAY_IN2);
-    gpio_free(HHGD_GPIO_RELEAY_IN3);
-    gpio_free(HHGD_GPIO_RELEAY_IN4);
-    gpio_free(HHGD_GPIO_LED_BL);
+    gpio_free(config.led_green);
+    gpio_free(config.led_red);
+    gpio_free(config.relay_in1);
+    gpio_free(config.relay_in2);
+    gpio_free(config.relay_in3);
+    gpio_free(config.relay_in4);
+    gpio_free(config.button_next);
+    gpio_free(config.button_before);
+    gpio_free(config.lcd_power);
 }
 
-bool hhgd_gpio_consig_is_valid(struct hhgd_error** error)
+
+
+bool hhg_lcd_pin_out_setup(u8 gpio_number, u8 gpio_direction, struct hhgd_error** error)
 {
-    // Checking the GPIO is valid or not
-    HHGD_IS_VALID(HHGD_GPIO_BUTTON, "HHGD_GPIO_BUTTON")
-    HHGD_IS_VALID(HHGD_GPIO_LED, "HHGD_GPIO_LED")
-    HHGD_IS_VALID(HHGD_GPIO_RELEAY_IN1, "HHGD_GPIO_RELEAY_IN1")
-    HHGD_IS_VALID(HHGD_GPIO_RELEAY_IN2, "HHGD_GPIO_RELEAY_IN2")
-    HHGD_IS_VALID(HHGD_GPIO_RELEAY_IN3, "HHGD_GPIO_RELEAY_IN3")
-    HHGD_IS_VALID(HHGD_GPIO_RELEAY_IN4, "HHGD_GPIO_RELEAY_IN4")
-    HHGD_IS_VALID(HHGD_GPIO_LED_BL, "HHGD_GPIO_LED_BL")
-    
-    return true;
+	u8 ret;
+
+	ret = gpio_request( gpio_number, "GPIO request");
+	if( ret != 0 )	{
+        char msg[MSG_LEN_ERROR_HGD] = { [0 ... MSG_LEN_ERROR_HGD - 1] = 0};
+        printf(msg, sizeof(msg) - 1, "Failed to request GPIO %d \n", gpio_number);
+        hhgd_error_new(error, HHGD_ERROR_GPIO_REQUEST, msg);
+		return false;
+	}	
+	
+	ret = gpio_export( gpio_number, 0);
+	if( ret != 0 )	{
+        char msg[MSG_LEN_ERROR_HGD] = { [0 ... MSG_LEN_ERROR_HGD - 1] = 0};
+        printf(msg, sizeof(msg) - 1, "Failed to export GPIO %d \n", gpio_number);
+        hhgd_error_new(error, HHGD_ERROR_GPIO_EXPORT, msg);
+		return false;
+	}
+
+	ret = gpio_direction_output( gpio_number, gpio_direction);
+	if( ret != 0 )	{
+        char msg[MSG_LEN_ERROR_HGD] = { [0 ... MSG_LEN_ERROR_HGD - 1] = 0};
+        printf(msg, sizeof(msg) - 1, "Failed to set GPIO direction %d \n", gpio_number );
+        hhgd_error_new(error, HHGD_ERROR_GPIO_DIRECTION, msg);
+		return false;
+	}
+
+	gpio_set_value(gpio_number, 0);
+
+	return true; 
 }
 
-bool hhgd_gpio_config_request(struct hhgd_error** error)
+bool hhg_lcd_pin_in_setup(u8 gpio_number, struct hhgd_error** error)
 {
-    HHGD_REQUEST(HHGD_GPIO_BUTTON, "HHGD_GPIO_BUTTON")
-    HHGD_REQUEST(HHGD_GPIO_LED, "HHGD_GPIO_LED")
-    HHGD_REQUEST(HHGD_GPIO_RELEAY_IN1, "HHGD_GPIO_RELEAY_IN1")
-    HHGD_REQUEST(HHGD_GPIO_RELEAY_IN2, "HHGD_GPIO_RELEAY_IN2")
-    HHGD_REQUEST(HHGD_GPIO_RELEAY_IN3, "HHGD_GPIO_RELEAY_IN3")
-    HHGD_REQUEST(HHGD_GPIO_RELEAY_IN4, "HHGD_GPIO_RELEAY_IN4")
-    HHGD_REQUEST(HHGD_GPIO_LED_BL, "HHGD_GPIO_LED_BL")
-    return true;
+    u8 ret;
+
+	ret = gpio_request( gpio_number, "GPIO request");
+	if( ret != 0 )	{
+        char msg[MSG_LEN_ERROR_HGD] = { [0 ... MSG_LEN_ERROR_HGD - 1] = 0};
+        printf(msg, sizeof(msg) - 1, "Failed to request GPIO %d \n", gpio_number);
+        hhgd_error_new(error, HHGD_ERROR_GPIO_REQUEST, msg);
+		return false;
+	}	
+	
+	ret = gpio_export( gpio_number, 0);
+	if( ret != 0 )	{
+        char msg[MSG_LEN_ERROR_HGD] = { [0 ... MSG_LEN_ERROR_HGD - 1] = 0};
+        printf(msg, sizeof(msg) - 1, "Failed to export GPIO %d \n", gpio_number);
+        hhgd_error_new(error, HHGD_ERROR_GPIO_EXPORT, msg);
+		return false;
+	}
+
+	ret = gpio_direction_input( gpio_number);
+	if( ret != 0 )	{
+        char msg[MSG_LEN_ERROR_HGD] = { [0 ... MSG_LEN_ERROR_HGD - 1] = 0};
+        printf(msg, sizeof(msg) - 1, "Failed to set GPIO direction %d \n", gpio_number );
+        hhgd_error_new(error, HHGD_ERROR_GPIO_DIRECTION, msg);
+		return false;
+	}
+
+	gpio_set_value(gpio_number, 0);
+
+	return true; 
 }

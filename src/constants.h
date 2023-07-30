@@ -19,20 +19,26 @@
 #ifndef _HHGD_COSTANTS_
 #define _HHGD_COSTANTS_
 
-#define HHGD_NAME "hhgd" 
 #define HHGD_TO_STR(_str) #_str
+
+#define HHGD_DRIVER_NAME "hhgd"
+#define HHGD_CLASS_NAME "hhgd"
+#define HHGD_MAJOR_NUM_START (0)
+#define HHGD_MINOR_NUM_COUNT (1)
 
 typedef unsigned char u8;
 typedef void* hhgd_ptr;
 
 enum hhgd_type
 {
-    HHGD_LED,
-    HHGD_RELAY_1,
-    HHGD_RELAY_2,
-    HHGD_RELAY_3,
-    HHGD_RELAY_4,
-    HHGD_BUTTON,
+    HHGD_LED_GREEN,
+    HHGD_LED_RED,
+    HHGD_RELAY_IN1,
+    HHGD_RELAY_IN2,
+    HHGD_RELAY_IN3,
+    HHGD_RELAY_IN4,
+    HHGD_BUTTON_NEXT,
+    HHGD_BUTTON_BEFORE,
     HHGD_LCD,
 };
 

@@ -26,7 +26,7 @@
 
 #ifdef pr_fmt
 #undef pr_fmt
-#define pr_fmt(fmt) HHGD_NAME ": " fmt
+#define pr_fmt(fmt) HHGD_DRIVER_NAME ": " fmt
 #endif
 
 
@@ -69,7 +69,7 @@ void hhgd_error_print(struct hhgd_error* error, const char* msg, _Bool free)
     if(msg)
     {
         static const char fmt[] = "%s: %s code=%u msg=%s";
-        size_t len = strlen(msg) + strlen(fmt) + strlen(HHGD_NAME);
+        size_t len = strlen(msg) + strlen(fmt) + strlen(HHGD_DRIVER_NAME) + 1;
         char* to_print = vmalloc(len);
         if(!to_print)
         {
@@ -77,7 +77,7 @@ void hhgd_error_print(struct hhgd_error* error, const char* msg, _Bool free)
         }
         memzero_explicit(to_print, len);
 
-        sprintf(to_print, fmt, HHGD_NAME, msg, error->code, error->msg);
+        snprintf(to_print, len - 1, fmt, HHGD_DRIVER_NAME, msg, error->code, error->msg);
 
         pr_info("%s", to_print);
 

@@ -46,6 +46,18 @@
 /// OUT | Balcklighting anode
 #define HHGD_GPIO_LED_BL     (14) 
 
+struct hhgd_gpio_config
+{
+    short led_green;
+    short led_red  ;
+    short relay_in1;
+    short relay_in2;
+    short relay_in3;
+    short relay_in4;
+    short button_next;
+    short button_before;
+    short lcd_power;
+};
 
 /**
  * @brief Init pin configuration
@@ -54,7 +66,7 @@
  * @return 0 init correctly
  * @return false some error
  */
-bool hhgd_gpio_config_init(struct hhgd_error** error);
+bool hhgd_gpio_config_init(const struct hhgd_gpio_config* config, struct hhgd_error** error);
 
 /**
  * @brief Free pin config

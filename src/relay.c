@@ -23,13 +23,13 @@ static u8 get_relay_gpio(enum hhgd_type relay)
 {
     switch (relay)
     {
-    case HHGD_RELAY_1:
+    case HHGD_RELAY_IN1:
         return HHGD_GPIO_RELEAY_IN1;
-    case HHGD_RELAY_2:
+    case HHGD_RELAY_IN2:
         return HHGD_GPIO_RELEAY_IN2;
-    case HHGD_RELAY_3:
+    case HHGD_RELAY_IN3:
         return HHGD_GPIO_RELEAY_IN3;
-    case HHGD_RELAY_4:
+    case HHGD_RELAY_IN4:
         return HHGD_GPIO_RELEAY_IN4;
     default:
         return 0;
@@ -37,10 +37,10 @@ static u8 get_relay_gpio(enum hhgd_type relay)
 }
 void hhgd_relay_init(void)
 {
-    hhgd_relay_set_state(HHGD_RELAY_1, false);
-    hhgd_relay_set_state(HHGD_RELAY_2, false);
-    hhgd_relay_set_state(HHGD_RELAY_3, false);
-    hhgd_relay_set_state(HHGD_RELAY_4, false);
+    hhgd_relay_set_state(HHGD_RELAY_IN1, false);
+    hhgd_relay_set_state(HHGD_RELAY_IN2, false);
+    hhgd_relay_set_state(HHGD_RELAY_IN3, false);
+    hhgd_relay_set_state(HHGD_RELAY_IN4, false);
 }
 
 void hhgd_relay_set_state(enum hhgd_type relay, bool state)

@@ -14,6 +14,7 @@
         "gpio.h": "c",
         "ioctl.h": "c",
         "lcd.h": "c",
-        "type_traits": "c"
+        "type_traits": "c",
+        "constants.h": "c"
     }
 }

@@ -34,16 +34,26 @@
 
 #ifdef pr_fmt
 #undef pr_fmt
-#define pr_fmt(fmt) HHGD_NAME ": " fmt
+#define pr_fmt(fmt) HHGD_DRIVER_NAME ": " fmt
 #endif
 
 #define READ_BUFF_LEN (256)
-#define NOT_DEF (3)
+
+//MODULE
+static short gpio_led_green     = -1;
+static short gpio_led_red       = -1;
+static short gpio_relay_in1     = -1;
+static short gpio_relay_in2     = -1;
+static short gpio_relay_in3     = -1;
+static short gpio_relay_in4     = -1;
+static short gpio_button_next   = -1;
+static short gpio_button_before = -1;
+static short gpio_lcd_power     = -1;
+
 
 // data
 static dev_t hhgd_dev = 0;
-static struct class *hhgd_class;
-static struct cdev hhgd_cdev;
+static struct class *hhgd_class = NULL;
 static struct cdev hhgd_cdev;
 static atomic_t device_busy = ATOMIC_INIT(0);
 
@@ -52,27 +62,58 @@ static int __init hhgd_driver_init(void);
 static void __exit hhgd_driver_exit(void);
 
 // static decl
-static int hhgd_open(struct inode *inode, struct file *file);
-static int hhgd_release(struct inode *inode, struct file *file);
-static ssize_t hhgd_read(struct file *filp, char __user *buff, size_t len, loff_t *off);
-static ssize_t hhgd_write(struct file *filp, const char *buff, size_t len, loff_t *off);
+static int hhgd_ioctl_open(struct inode *inode, struct file *file);
+static int hhgd_ioctl_release(struct inode *inode, struct file *file);
+static ssize_t hhgd_ioctl_read(struct file *filp, char __user *buff, size_t len, loff_t *off);
+static ssize_t hhgd_ioctl_write(struct file *filp, const char *buff, size_t len, loff_t *off);
+static long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long arg);
 
 static int hhgd_uevent(struct device *dev, struct kobj_uevent_env *env);
 
+
+module_param(gpio_led_green, short, 0660);
+MODULE_PARM_DESC(gpio_led_green, "GPIO LED GREEN");
+
+module_param(gpio_led_red, short, 0660);
+MODULE_PARM_DESC(gpio_led_red, "GPIO LED RED");
+
+module_param(gpio_relay_in1, short, 0660);
+MODULE_PARM_DESC(gpio_relay_in1, "GPIO RELAY IN1 - Releay ingres 1");
+
+module_param(gpio_relay_in2, short, 0660);
+MODULE_PARM_DESC(gpio_relay_in2, "GPIO RELAY IN2 - Releay ingres 2");
+
+module_param(gpio_relay_in3, short, 0660);
+MODULE_PARM_DESC(gpio_relay_in3, "GPIO RELAY IN3 - Releay ingres 3");
+
+module_param(gpio_relay_in4, short, 0660);
+MODULE_PARM_DESC(gpio_relay_in4, "GPIO RELAY IN4 - Releay ingres 4");
+
+module_param(gpio_button_next, short, 0660);
+MODULE_PARM_DESC(gpio_button_next, "GPIO BUTTON NEXT");
+
+module_param(gpio_button_before, short, 0660);
+MODULE_PARM_DESC(gpio_button_before, "GPIO BUTTON BEFORE");
+
+module_param(gpio_lcd_power, short, 0660);
+MODULE_PARM_DESC(gpio_lcd_power, "GPIO LCD POWER - Switch on/of the lcd");
+
+
 // File operation structure
 static struct file_operations fops =
-    {
-        .owner = THIS_MODULE,
-        .read = hhgd_read,
-        .write = hhgd_write,
-        .open = hhgd_open,
-        .unlocked_ioctl = hhgd_button_ioctl,
-        .release = hhgd_release};
+{
+    .owner = THIS_MODULE,
+    .read = hhgd_ioctl_read,
+    .write = hhgd_ioctl_write,
+    .open = hhgd_ioctl_open,
+    .release = hhgd_ioctl_release,
+    .unlocked_ioctl = hhgd_ioctl
+};
 
 /*
 ** This function will be called when we open the Device file
 */
-int hhgd_open(struct inode *inode, struct file *file)
+int hhgd_ioctl_open(struct inode *inode, struct file *file)
 {
     if (atomic_read(&device_busy) > 0)
     {
@@ -89,7 +130,7 @@ int hhgd_open(struct inode *inode, struct file *file)
 /*
 ** This function will be called when we close the Device file
 */
-int hhgd_release(struct inode *inode, struct file *file)
+int hhgd_ioctl_release(struct inode *inode, struct file *file)
 {
 
     // hhgd_button_release();
@@ -103,25 +144,28 @@ int hhgd_release(struct inode *inode, struct file *file)
 /*
 ** This function will be called when we read the Device file
 */
-ssize_t hhgd_read(struct file *filp, char __user *buff, size_t count, loff_t *off)
+ssize_t hhgd_ioctl_read(struct file *filp, char __user *buff, size_t count, loff_t *off)
 {
-    char msg[READ_BUFF_LEN];
-    memset(msg, '\0', READ_BUFF_LEN);
+    u32 msg_len = 0;
+    char msg[READ_BUFF_LEN] = { [ 0 ... READ_BUFF_LEN - 1] = 0};
 
-    u32 msg_len = snprintf(msg,
-                            sizeof(msg), 
-                            "HHGD_LED:\t%u\n"
-                            "HHGD_BUTTON:\t%u\n"
-                            "HHGD_RELAY_1:\t%u\n"
-                            "HHGD_RELAY_2:\t%u\n"
-                            "HHGD_RELAY_3:\t%u\n"
-                            "HHGD_RELAY_4:\t%u\n",
-                            hhgd_led_get_state(),
-                            hhgd_button_get_state(), 
-                            hhgd_relay_get_state(HHGD_RELAY_1),
-                            hhgd_relay_get_state(HHGD_RELAY_2),
-                            hhgd_relay_get_state(HHGD_RELAY_3),
-                            hhgd_relay_get_state(HHGD_RELAY_4));
+    // msg_len = snprintf(msg,
+    //                 sizeof(msg), 
+    //                 "HHGD_LED:\t%u\n"
+    //                 "HHGD_BUTTON:\t%u\n"
+    //                 "HHGD_RELAY_IN1:\t%u\n"
+    //                 "HHGD_RELAY_IN2:\t%u\n"
+    //                 "HHGD_RELAY_IN3:\t%u\n"
+    //                 "HHGD_RELAY_IN4:\t%u\n"
+    //                 "HHGD_LCD:\t%s\n",
+    //                 hhgd_led,
+    //                 99, 
+    //                 HHGD_RELAY_IN1,
+    //                 HHGD_RELAY_IN2,
+    //                 HHGD_RELAY_IN3,
+    //                 HHGD_RELAY_IN4,
+    //                 hhgd_lcd
+    // );
 
     pr_info("%s", msg);
 
@@ -135,8 +179,9 @@ ssize_t hhgd_read(struct file *filp, char __user *buff, size_t count, loff_t *of
 
 /*
 ** This function will be called when we write the Device file
+*  echo "HHGD_RELAY_IN1 1" > /dev/hhgd
 */
-ssize_t hhgd_write(struct file *filp, const char __user *buff, size_t len, loff_t *off)
+ssize_t hhgd_ioctl_write(struct file *filp, const char __user *buff, size_t len, loff_t *off)
 {
     len--;
     if (len > HHGD_PARSER_BUFF_MAX)
@@ -157,33 +202,108 @@ ssize_t hhgd_write(struct file *filp, const char __user *buff, size_t len, loff_
         return -EINVAL;
     }
 
-    kfree(params);
-
     struct hhgd_parser parsed;
     if (!hhgd_parser_params(params, len, &parsed))
     {
-        return 1;
+        pr_err("Parsing error");
+        kfree(params);
+        return -ENOEXEC;
     }
+    
+    kfree(params);
+
 
     switch (parsed.type)
     {
-    case HHGD_LED:
-        pr_info("HHGD_LED: %u\n", parsed.status);
-        hhgd_led_set_state(parsed.status);
-        return len;
-    case HHGD_BUTTON:
-        return len;
-    case HHGD_RELAY_1:
-    case HHGD_RELAY_2:
-    case HHGD_RELAY_3:
-    case HHGD_RELAY_4:
-        pr_info("HHGD_RELAY_%u: %u\n", parsed.type, parsed.status);
+    case HHGD_LED_GREEN ... HHGD_LED_RED:
+        hhgd_led_set_state(parsed.type, parsed.status);
+        break;
+    case HHGD_BUTTON_NEXT ... HHGD_BUTTON_BEFORE:
+        break;
+    case HHGD_RELAY_IN1 ... HHGD_RELAY_IN4:
         hhgd_relay_set_state(parsed.type, parsed.status);
-        return len;
+        break;
+    case HHGD_LCD:  
+        //todo: call external driver
+        break;
     }
 
-    return -EINVAL;
+    return 0;
 }
+
+long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long arg)
+{
+    
+    const void* arg_ptr = (const void *)arg;
+
+	if(arg_ptr == NULL) 
+    {
+		printk( KERN_DEBUG "Invalid argument for klcd IOCTL \n");
+		return -EINVAL;
+	}
+
+    // switch (ioctl_command)
+    // {
+    // case HHGD_LED:   
+    // {
+
+    //     break;
+    // }
+        
+    // case HHGD_BUTTON:
+    //     {
+    //         bool value = 0;
+    //         if( copy_from_user(&value, arg_ptr, sizeof(bool)) ){
+    //             pr_err("Failed to copy from user space buffer");
+    //             return -EFAULT;
+    //         }
+    //     }
+    //     break;
+    // case HHGD_RELAY_1:
+    //     {
+    //         if( copy_from_user(&hhgd_relay_1, arg_ptr, sizeof(hhgd_relay_1)) ){
+    //             pr_err("Failed to copy from user space buffer");
+    //             return -EFAULT;
+    //         }
+    //     }
+    //     break;
+    // case HHGD_RELAY_2:
+    //     {
+    //         if( copy_from_user(&hhgd_relay_2, arg_ptr, sizeof(hhgd_relay_2)) ){
+    //             pr_err("Failed to copy from user space buffer");
+    //             return -EFAULT;
+    //         }
+    //     }
+    //     break;
+    // case HHGD_RELAY_3:
+    //     {
+    //         if( copy_from_user(&hhgd_relay_3, arg_ptr, sizeof(hhgd_relay_3)) ){
+    //             pr_err("Failed to copy from user space buffer");
+    //             return -EFAULT;
+    //         }
+    //     }
+    //     break;
+    // case HHGD_RELAY_4:
+    //     {
+    //         if( copy_from_user(&hhgd_relay_4, arg_ptr, sizeof(hhgd_relay_4)) ){
+    //             pr_err("Failed to copy from user space buffer");
+    //             return -EFAULT;
+    //         }
+    //     }
+    //     break;
+    // case HHGD_LCD:
+    //     {
+    //         if( copy_from_user(hhgd_lcd, arg_ptr, sizeof(hhgd_lcd)) ){
+    //             pr_err("Failed to copy from user space buffer");
+    //             return -EFAULT;
+    //         }
+    //     }
+    //     break;
+    // }
+
+    return 0;
+}
+
 
 /**
  * @brief Change access permission in user space
@@ -199,9 +319,8 @@ int hhgd_uevent(struct device *dev, struct kobj_uevent_env *env)
 */
 int __init hhgd_driver_init(void)
 {
-
     /*Allocating Major number*/
-    if ((alloc_chrdev_region(&hhgd_dev, 0, 1, "hhgd_Dev")) < 0)
+    if ((alloc_chrdev_region(&hhgd_dev, HHGD_MAJOR_NUM_START, HHGD_MINOR_NUM_COUNT, HHGD_DRIVER_NAME)) < 0)
     {
         pr_err("Cannot allocate major number\n");
         goto r_unreg;
@@ -219,7 +338,7 @@ int __init hhgd_driver_init(void)
     }
 
     /*Creating struct class*/
-    if ((hhgd_class = class_create(THIS_MODULE, "hhgd_class")) == NULL)
+    if ((hhgd_class = class_create(THIS_MODULE, HHGD_CLASS_NAME)) == NULL)
     {
         pr_err("Cannot create the struct class\n");
         goto r_class;
@@ -227,7 +346,7 @@ int __init hhgd_driver_init(void)
     hhgd_class->dev_uevent = hhgd_uevent;
 
     /*Creating device*/
-    if ((device_create(hhgd_class, NULL, hhgd_dev, NULL, HHGD_NAME)) == NULL)
+    if ((device_create(hhgd_class, NULL, hhgd_dev, NULL, HHGD_DRIVER_NAME)) == NULL)
     {
         pr_err("Cannot create the Device \n");
         goto r_device;
@@ -236,8 +355,23 @@ int __init hhgd_driver_init(void)
     // load pin config
     struct hhgd_error *error = NULL;
 
+    struct hhgd_gpio_config gpio_config = 
+    {
+        .led_green      = gpio_led_green,
+        .led_red        = gpio_led_red,
+        .relay_in1      = gpio_relay_in1,
+        .relay_in2      = gpio_relay_in2,
+        .relay_in3      = gpio_relay_in3,
+        .relay_in4      = gpio_relay_in4,
+        .button_next    = gpio_button_next,
+        .button_before  = gpio_button_before,
+        .lcd_power      = gpio_lcd_power
+    };
+
+
+
     pr_info("GIPO config start");
-    if (!hhgd_gpio_config_init(&error))
+    if (!hhgd_gpio_config_init(&gpio_config, &error))
     {
         hhgd_error_print(error, "GIPO config fail", true);
         goto r_gpio_config;
@@ -245,7 +379,7 @@ int __init hhgd_driver_init(void)
     pr_info("GPIOs config done");
 
     pr_info("Button driver start");
-    if (!hhgd_button_init(&error))
+    if (!hhgd_button_init(&gpio_config, &error))
     {
         hhgd_error_print(error, "Button driver fail", true);
         goto r_gpio_config;
@@ -253,7 +387,7 @@ int __init hhgd_driver_init(void)
     pr_info("Button driver done");
 
     pr_info("LED driver start");
-    hhgd_led_init();
+    hhgd_led_init(&gpio_config);
 
     pr_info("Realy driver start");
     hhgd_relay_init();

@@ -41,7 +41,7 @@
 
 #ifdef pr_fmt
 #undef pr_fmt
-#define pr_fmt(fmt) HHGD_NAME ": " fmt
+#define pr_fmt(fmt) HHGD_DRIVER_NAME ": " fmt
 #endif
 
 #define DIFF_JIFFIES 25
@@ -54,27 +54,51 @@ unsigned long old_jiffies = 0;
 #define REGISTER_UAPP _IO('R', 'g')
 static struct task_struct *task = NULL;
 
+static short gpio_button_next;
+static short gpio_button_before;
 
-static u32 gpio_irq_number;
+static u32 gpio_irq_number_next;
+static u32 gpio_irq_number_before;
 
 static atomic_t thread_busy = ATOMIC_INIT(0);
 
 static irqreturn_t gpio_irq_handler(int irq, void *dev_id);
 static irqreturn_t gpio_interrupt_thread_fn(int irq, void *dev_id);
 
-bool hhgd_button_init(struct hhgd_error **error)
+bool hhgd_button_init(const struct hhgd_gpio_config* _config, struct hhgd_error **error)
 {
-  // Get the IRQ number for our GPIO
-  gpio_irq_number = gpio_to_irq(HHGD_GPIO_BUTTON);
+  if(config == NULL)
+  {
+      return false;
+  }
 
-  if (request_threaded_irq(gpio_irq_number,          // IRQ number
+  gpio_button_next = config->button_next;
+  gpio_button_before = config->button_before;
+
+  // Get the IRQ number for our GPIO
+  gpio_irq_number_next = gpio_to_irq(gpio_button_next);
+
+  if (request_threaded_irq(gpio_irq_number_next,          // IRQ number
                            (void *)gpio_irq_handler, // IRQ handler (Top half)
                            gpio_interrupt_thread_fn, // IRQ Thread handler (Bottom half)
                            IRQF_TRIGGER_FALLING,     // Handler will be called in raising edge
-                           HHGD_NAME,                 // used to identify the device name using this IRQ
+                           HHGD_DRIVER_NAME,         // used to identify the device name using this IRQ
                            NULL))                    // device id for shared IRQ
   {
-    hhgd_error_new(error, HHGD_ERROR_GPIO_IRQ, "cannot register IRQ");
+    hhgd_error_new(error, HHGD_ERROR_GPIO_IRQ, "cannot register IRQ for button next");
+    return false;
+  }
+
+  gpio_irq_number_before = gpio_to_irq(gpio_button_next);
+
+  if (request_threaded_irq(gpio_irq_number_before,   // IRQ number
+                           (void *)gpio_irq_handler, // IRQ handler (Top half)
+                           gpio_interrupt_thread_fn, // IRQ Thread handler (Bottom half)
+                           IRQF_TRIGGER_FALLING,     // Handler will be called in raising edge
+                           HHGD_DRIVER_NAME,         // used to identify the device name using this IRQ
+                           NULL))                    // device id for shared IRQ
+  {
+    hhgd_error_new(error, HHGD_ERROR_GPIO_IRQ, "cannot register IRQ for button before");
     return false;
   }
 
@@ -91,9 +115,17 @@ long hhgd_button_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
   return 0;
 }
 
-inline bool hhgd_button_get_state(void)
+bool hhgd_button_get_state(enum hhgd_type type)
 {
-  return !gpio_get_value(HHGD_GPIO_BUTTON);
+  switch (type)
+  {
+  case HHGD_BUTTON_NEXT:
+    return !gpio_get_value(gpio_irq_number_next);
+  case HHGD_BUTTON_NEXT:
+    return !gpio_get_value(gpio_irq_number_before);
+  default:
+    return false;
+  }
 }
 
 inline void hhgd_button_free(void)
@@ -102,7 +134,8 @@ inline void hhgd_button_free(void)
   {
     	task = NULL;
   }
-  free_irq(gpio_irq_number, NULL);
+  free_irq(gpio_irq_number_next, NULL);
+  free_irq(gpio_irq_number_before, NULL);
 }
 
 // Interrupt handler for GPIO 25. This will be called whenever there is a raising edge detected.

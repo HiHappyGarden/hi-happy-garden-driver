@@ -19,26 +19,61 @@
 #include "led.h"
 #include "gpio_config.h"
 
+static short gpio_led_green;
+static short gpio_led_red;
 
-void hhgd_led_init(void)
+void hhgd_led_init(const struct hhgd_gpio_config* config)
 {
+    if(config == NULL)
+    {
+        return false;
+    }
+
+    gpio_led_green = config->led_green;
+    gpio_led_red = config->led_red;
+
     hhgd_led_set_state(false);
 }
 
-void hhgd_led_set_state(bool state)
+void hhgd_led_set_state(enum hhgd_type type, bool state)
 {
-    if(hhgd_led_get_state() != state)
+    if(type == HHGD_LED_GREEN)
     {
-        gpio_set_value(HHGD_GPIO_LED, state);
+        if(hhgd_led_get_state(type) != state)
+        {
+            gpio_set_value(gpio_led_green, state);
+        }
+    }
+    else if(type == HHGD_LED_RED)
+    {
+        if(hhgd_led_get_state(type) != state)
+        {
+            gpio_set_value(gpio_led_red, state);
+        }
     }
 }
 
-inline void hhgd_led_toggle_state(void)
+void hhgd_led_toggle_state(enum hhgd_type type)
 {
-    hhgd_led_set_state(!gpio_get_value(HHGD_GPIO_LED));
+    if(type == HHGD_LED_GREEN )
+    {
+        hhgd_led_set_state(!gpio_get_value(gpio_led_green));
+    }
+    else if(type == HHGD_LED_GREEN )
+    {
+        hhgd_led_set_state(!gpio_get_value(gpio_led_red));
+    }
 }
 
-inline bool hhgd_led_get_state(void)
+bool hhgd_led_get_state(enum hhgd_type type)
 {
-    return gpio_get_value(HHGD_GPIO_LED);
+    if(type == HHGD_LED_GREEN )
+    {
+       return gpio_get_value(gpio_led_green):
+    }
+    else if(type == HHGD_LED_GREEN )
+    {
+        return gpio_get_value(gpio_led_red);
+    }
+    return false;
 }
