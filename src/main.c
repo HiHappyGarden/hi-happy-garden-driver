@@ -37,17 +37,26 @@
 #define NOT_DEF (3)
 
 
-bool hhgd_led = 0;
-bool hhgd_relay_1 = 0;
-bool hhgd_relay_2 = 0;
-bool hhgd_relay_3 = 0;
-bool hhgd_relay_4 = 0;
-bool hhgd_button = 0;
-char hhgd_lcd[34] = { [0 ... 33] = 0 };
-
-
+static bool hhgd_led = 0;
+static bool hhgd_relay_1 = 0;
+static bool hhgd_relay_2 = 0;
+static bool hhgd_relay_3 = 0;
+static bool hhgd_relay_4 = 0;
+//static bool hhgd_button = 0;
+static char hhgd_lcd[34] = { [0 ... 33] = 0 };
 
 //MODULE
+
+static short gpio_led_green     = -1;
+static short gpio_led_red       = -1;
+static short gpio_relay_in1     = -1;
+static short gpio_relay_in2     = -1;
+static short gpio_relay_in3     = -1;
+static short gpio_relay_in4     = -1;
+static short gpio_button_next   = -1;
+static short gpio_button_before = -1;
+static short gpio_lcd_power     = -1;
+
 
 // data
 static dev_t hhgd_dev = 0;
@@ -67,6 +76,35 @@ static ssize_t hhgd_ioctl_write(struct file *filp, const char *buff, size_t len,
 static long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long arg);
 
 static int hhgd_uevent(struct device *dev, struct kobj_uevent_env *env);
+
+
+module_param(gpio_led_green, short, 0660);
+MODULE_PARM_DESC(gpio_led_green, "GPIO LED GREEN");
+
+module_param(gpio_led_red, short, 0660);
+MODULE_PARM_DESC(gpio_led_red, "GPIO LED RED");
+
+module_param(gpio_relay_in1, short, 0660);
+MODULE_PARM_DESC(gpio_relay_in1, "GPIO RELAY IN1 - Releay ingres 1");
+
+module_param(gpio_relay_in2, short, 0660);
+MODULE_PARM_DESC(gpio_relay_in2, "GPIO RELAY IN2 - Releay ingres 2");
+
+module_param(gpio_relay_in3, short, 0660);
+MODULE_PARM_DESC(gpio_relay_in3, "GPIO RELAY IN3 - Releay ingres 3");
+
+module_param(gpio_relay_in4, short, 0660);
+MODULE_PARM_DESC(gpio_relay_in4, "GPIO RELAY IN4 - Releay ingres 4");
+
+module_param(gpio_button_next, short, 0660);
+MODULE_PARM_DESC(gpio_button_next, "GPIO BUTTON NEXT");
+
+module_param(gpio_button_before, short, 0660);
+MODULE_PARM_DESC(gpio_button_before, "GPIO BUTTON BEFORE");
+
+module_param(gpio_lcd_power, short, 0660);
+MODULE_PARM_DESC(gpio_lcd_power, "GPIO LCD POWER - Switch on/of the lcd");
+
 
 // File operation structure
 static struct file_operations fops =
@@ -116,7 +154,7 @@ int hhgd_ioctl_release(struct inode *inode, struct file *file)
 ssize_t hhgd_ioctl_read(struct file *filp, char __user *buff, size_t count, loff_t *off)
 {
     u32 msg_len = 0;
-    char msg[READ_BUFF_LEN];
+    char msg[READ_BUFF_LEN] = { [ 0 ... READ_BUFF_LEN - 1] = 0};
     memset(msg, '\0', READ_BUFF_LEN);
 
     msg_len = snprintf(msg,
@@ -203,7 +241,7 @@ ssize_t hhgd_ioctl_write(struct file *filp, const char __user *buff, size_t len,
     case HHGD_RELAY_4:
         hhgd_relay_4 = parsed.status;
         break;
-    case HHGD_LCD:
+    case HHGD_LCD:  
         strncpy(hhgd_lcd, parsed.buff, sizeof(hhgd_lcd));
         break;
     }
@@ -215,39 +253,72 @@ ssize_t hhgd_ioctl_write(struct file *filp, const char __user *buff, size_t len,
 long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long arg)
 {
     
+    const void* arg_ptr = (const void *)arg;
 
-    // if(value == NULL)
-    // {
-    //     pr_err("Value NULL");
-    //     return -EINVAL;
-    // }
+	if(arg_ptr == NULL) 
+    {
+		printk( KERN_DEBUG "Invalid argument for klcd IOCTL \n");
+		return -EINVAL;
+	}
 
-    // switch (ioctl_command)
-    // {
-    // case HHGD_LED:
-    // {
-    //     const u8* value = (const u8*)arg;
-    //     hhgd_led = *value;
-    //     break;
-    // }
+    switch (ioctl_command)
+    {
+    case HHGD_LED:   
+    {
+
+        break;
+    }
         
-    // case HHGD_BUTTON:
-    //     break;
-    // case HHGD_RELAY_1:
-    //     hhgd_relay_1 = *value;
-    //     break;
-    // case HHGD_RELAY_2:
-    //     hhgd_relay_2 = *value;
-    //     break;
-    // case HHGD_RELAY_3:
-    //     hhgd_relay_3 = *value;
-    //     break;
-    // case HHGD_RELAY_4:
-    //     hhgd_relay_4 = *value;
-    //     break;
-    // case HHGD_LCD:
-    //     break;
-    // }
+    case HHGD_BUTTON:
+        {
+            bool value = 0;
+            if( copy_from_user(&value, arg_ptr, sizeof(bool)) ){
+                pr_err("Failed to copy from user space buffer");
+                return -EFAULT;
+            }
+        }
+        break;
+    case HHGD_RELAY_1:
+        {
+            if( copy_from_user(&hhgd_relay_1, arg_ptr, sizeof(hhgd_relay_1)) ){
+                pr_err("Failed to copy from user space buffer");
+                return -EFAULT;
+            }
+        }
+        break;
+    case HHGD_RELAY_2:
+        {
+            if( copy_from_user(&hhgd_relay_2, arg_ptr, sizeof(hhgd_relay_2)) ){
+                pr_err("Failed to copy from user space buffer");
+                return -EFAULT;
+            }
+        }
+        break;
+    case HHGD_RELAY_3:
+        {
+            if( copy_from_user(&hhgd_relay_3, arg_ptr, sizeof(hhgd_relay_3)) ){
+                pr_err("Failed to copy from user space buffer");
+                return -EFAULT;
+            }
+        }
+        break;
+    case HHGD_RELAY_4:
+        {
+            if( copy_from_user(&hhgd_relay_4, arg_ptr, sizeof(hhgd_relay_4)) ){
+                pr_err("Failed to copy from user space buffer");
+                return -EFAULT;
+            }
+        }
+        break;
+    case HHGD_LCD:
+        {
+            if( copy_from_user(hhgd_lcd, arg_ptr, sizeof(hhgd_lcd)) ){
+                pr_err("Failed to copy from user space buffer");
+                return -EFAULT;
+            }
+        }
+        break;
+    }
 
     return 0;
 }
