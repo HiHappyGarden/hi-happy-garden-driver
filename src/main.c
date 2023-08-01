@@ -301,7 +301,8 @@ long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long 
     //     break;
     // }
 
-    return 0;
+    len++;
+    return len;
 }
 
 
