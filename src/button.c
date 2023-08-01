@@ -210,7 +210,7 @@ irqreturn_t gpio_interrupt_thread_fn(enum hhgd_type type, int irq, void *dev_id)
 
 
 		/* Send the signal */
-		if(send_sig_info(HHGD_SIGETX, (struct kernel_siginfo*) &info, task) < 0) 
+		if(send_sig_info(HHGD_SIGETX, &info, task) < 0) 
 			printk("gpio_irq_signal: Error sending signal\n");
 	}
 
