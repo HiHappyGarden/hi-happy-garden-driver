@@ -228,7 +228,8 @@ ssize_t hhgd_ioctl_write(struct file *filp, const char __user *buff, size_t len,
         break;
     }
 
-    return 0;
+    len++;
+    return len;
 }
 
 long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long arg)
@@ -301,8 +302,7 @@ long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long 
     //     break;
     // }
 
-    len++;
-    return len;
+    return 0;
 }
 
 
