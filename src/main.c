@@ -23,6 +23,7 @@
 #include <linux/device.h>
 #include <linux/delay.h>
 #include <linux/uaccess.h> //copy_to/from_user()
+#include <linux/kthread.h>
 
 #include "constants.h"
 #include "error.h"
@@ -43,6 +44,19 @@ static bool hhgd_relay_in2  = 0;
 static bool hhgd_relay_in3  = 0;
 static bool hhgd_relay_in4  = 0;
 static char hhgd_lcd[34]    = { [0 ... 33] = 0 };
+
+struct task_struct* read_buttons_task = NULL;
+static atomic_t read_buttons_run = ATOMIC_INIT(0);
+static int read_buttons_fn(void *pv)
+{
+    while(atomic_read(&read_buttons_run))
+    {
+        pr_info("In EmbeTronicX Thread Function");
+        msleep(1000);
+    }
+    return 0;
+}
+
 
 //MODULE
 
@@ -271,7 +285,7 @@ long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long 
         break;
     case HHGD_RELAY_IN1:
         {
-            if( copy_from_user(&hhgd_relay_in1, arg_ptr, sizeof(hhgd_relay_in1)) )
+            if(copy_from_user(&hhgd_relay_in1, arg_ptr, sizeof(hhgd_relay_in1)))
             {
                 pr_err("Failed to copy from user space buffer");
                 return -EFAULT;
@@ -280,7 +294,7 @@ long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long 
         break;
     case HHGD_RELAY_IN2:
         {
-            if( copy_from_user(&hhgd_relay_in2, arg_ptr, sizeof(hhgd_relay_in2)) )
+            if(copy_from_user(&hhgd_relay_in2, arg_ptr, sizeof(hhgd_relay_in2)))
             {
                 pr_err("Failed to copy from user space buffer");
                 return -EFAULT;
@@ -289,7 +303,7 @@ long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long 
         break;
     case HHGD_RELAY_IN3:
         {
-            if( copy_from_user(&hhgd_relay_in3, arg_ptr, sizeof(hhgd_relay_in3)) )
+            if(copy_from_user(&hhgd_relay_in3, arg_ptr, sizeof(hhgd_relay_in3)))
             {
                 pr_err("Failed to copy from user space buffer");
                 return -EFAULT;
@@ -298,7 +312,7 @@ long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long 
         break;
     case HHGD_RELAY_IN4:
         {
-            if( copy_from_user(&hhgd_relay_in4, arg_ptr, sizeof(hhgd_relay_in4)) )
+            if(copy_from_user(&hhgd_relay_in4, arg_ptr, sizeof(hhgd_relay_in4)))
             {
                 pr_err("Failed to copy from user space buffer");
                 return -EFAULT;
@@ -307,7 +321,7 @@ long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long 
         break;
     case HHGD_LED_GREEN:
         {
-            if( copy_from_user(&hhgd_led_green, arg_ptr, sizeof(hhgd_led_green)) )
+            if(copy_from_user(&hhgd_led_green, arg_ptr, sizeof(hhgd_led_green)))
             {
                 pr_err("Failed to copy from user space buffer");
                 return -EFAULT;
@@ -316,7 +330,7 @@ long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long 
         break;
     case HHGD_LED_RED:
         {
-            if( copy_from_user(&hhgd_led_red, arg_ptr, sizeof(hhgd_led_red)) )
+            if(copy_from_user(&hhgd_led_red, arg_ptr, sizeof(hhgd_led_red)))
             {
                 pr_err("Failed to copy from user space buffer");
                 return -EFAULT;
@@ -325,7 +339,7 @@ long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long 
         break;
     case HHGD_LCD:
         {
-            if( copy_from_user(hhgd_lcd, arg_ptr, sizeof(hhgd_lcd)) )
+            if(copy_from_user(hhgd_lcd, arg_ptr, sizeof(hhgd_lcd)))
             {
                 pr_err("Failed to copy from user space buffer");
                 return -EFAULT;
@@ -385,6 +399,17 @@ int __init hhgd_driver_init(void)
         goto r_device;
     }
 
+    atomic_inc(&read_buttons_run);
+    read_buttons_task = kthread_run(read_buttons_fn, NULL, "read_buttons_task"); 
+    if(read_buttons_task) 
+    {
+        pr_info("Create and start read_buttons_task");
+    } 
+    else 
+    {
+        pr_err("FAIL to create and start read_buttons_task");
+    }
+
     return 0;
 
 r_device:
@@ -404,6 +429,11 @@ r_unreg:
 */
 static void __exit hhgd_driver_exit(void)
 {
+    atomic_sub(1, &read_buttons_run);
+    if(read_buttons_task)
+    {
+        kthread_stop(read_buttons_task);
+    }
     device_destroy(hhgd_class, hhgd_dev);
     class_destroy(hhgd_class);
     cdev_del(&hhgd_cdev);
