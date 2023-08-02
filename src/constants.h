@@ -31,12 +31,14 @@ typedef void* hhgd_ptr;
 
 enum hhgd_type
 {
-    HHGD_LED,
-    HHGD_RELAY_1,
-    HHGD_RELAY_2,
-    HHGD_RELAY_3,
-    HHGD_RELAY_4,
-    HHGD_BUTTON,
+    HHGD_LED_GREEN,
+    HHGD_LED_RED,
+    HHGD_RELAY_IN1,
+    HHGD_RELAY_IN2,
+    HHGD_RELAY_IN3,
+    HHGD_RELAY_IN4,
+    HHGD_BUTTON_NEXT,
+    HHGD_BUTTON_BEFORE,
     HHGD_LCD,
 };
 

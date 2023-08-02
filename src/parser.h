@@ -39,6 +39,6 @@ struct hhgd_parser
  * @return true successful
  * @return false fail
  */
-bool hhgd_parser_params(const char* buff, size_t len, struct hhgd_parser* parser);
+bool hhgd_parser_params(const char* buff, size_t len, struct hhgd_parser* parser)  __attribute__((nonnull (1, 3)));
 
 #endif

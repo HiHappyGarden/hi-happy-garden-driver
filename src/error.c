@@ -60,12 +60,6 @@ bool hhgd_error_new(struct hhgd_error** error, enum hhgd_error_code code, const 
 
 void hhgd_error_print(struct hhgd_error* error, const char* msg, _Bool free)
 {
-    if(error == NULL)
-    {
-        return;
-    }
-
-    
     if(msg)
     {
         static const char fmt[] = "%s: %s code=%u msg=%s";

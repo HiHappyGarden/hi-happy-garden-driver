@@ -30,8 +30,9 @@
 enum hhgd_error_code
 {
     HHGD_ERROR_NONE,
-    HHGD_ERROR_GPIO_NOT_VALID = 1,
-    HHGD_ERROR_GPIO_REQUEST,
+    HHGD_ERROR_GPIO_REQUEST = 1,
+    HHGD_ERROR_GPIO_EXPORT,
+    HHGD_ERROR_GPIO_DIRECTION,
     HHGD_ERROR_GPIO_DEBOUNCE,
     HHGD_ERROR_GPIO_IRQ,
     HHGD_ERROR_SYS_INFO_SYSFS_CREATE,
@@ -63,7 +64,7 @@ bool hhgd_error_new(struct hhgd_error** error, enum hhgd_error_code code, const 
  * @param msg addtidional message to add if NULL not print nothing
  * @param free 0 not free
  */
-void hhgd_error_print(struct hhgd_error* error, const char* msg, bool free);
+void hhgd_error_print(struct hhgd_error* error, const char* msg, bool free)  __attribute__((nonnull (1)));
 
 /**
  * @brief Gel last error

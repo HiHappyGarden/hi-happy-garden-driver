@@ -36,14 +36,13 @@
 #define READ_BUFF_LEN (256)
 #define NOT_DEF (3)
 
-
-static bool hhgd_led = 0;
-static bool hhgd_relay_1 = 0;
-static bool hhgd_relay_2 = 0;
-static bool hhgd_relay_3 = 0;
-static bool hhgd_relay_4 = 0;
-//static bool hhgd_button = 0;
-static char hhgd_lcd[34] = { [0 ... 33] = 0 };
+static bool hhgd_led_green  = 0;
+static bool hhgd_led_red    = 0;
+static bool hhgd_relay_in1  = 0;
+static bool hhgd_relay_in2  = 0;
+static bool hhgd_relay_in3  = 0;
+static bool hhgd_relay_in4  = 0;
+static char hhgd_lcd[34]    = { [0 ... 33] = 0 };
 
 //MODULE
 
@@ -159,19 +158,19 @@ ssize_t hhgd_ioctl_read(struct file *filp, char __user *buff, size_t count, loff
 
     msg_len = snprintf(msg,
                     sizeof(msg), 
-                    "HHGD_LED:\t%u\n"
-                    "HHGD_BUTTON:\t%u\n"
-                    "HHGD_RELAY_1:\t%u\n"
-                    "HHGD_RELAY_2:\t%u\n"
-                    "HHGD_RELAY_3:\t%u\n"
-                    "HHGD_RELAY_4:\t%u\n"
+                    "HHGD_LED_GREEN:\t%u\n"
+                    "HHGD_LED_RED:\t%u\n"
+                    "HHGD_RELAY_IN1:\t%u\n"
+                    "HHGD_RELAY_IN2:\t%u\n"
+                    "HHGD_RELAY_IN3:\t%u\n"
+                    "HHGD_RELAY_IN4:\t%u\n"
                     "HHGD_LCD:\t%s\n",
-                    hhgd_led,
-                    99, 
-                    hhgd_relay_1,
-                    hhgd_relay_2,
-                    hhgd_relay_3,
-                    hhgd_relay_4,
+                    hhgd_led_green,
+                    hhgd_led_red,
+                    hhgd_relay_in1,
+                    hhgd_relay_in2,
+                    hhgd_relay_in3,
+                    hhgd_relay_in4,
                     hhgd_lcd
     );
 
@@ -187,7 +186,7 @@ ssize_t hhgd_ioctl_read(struct file *filp, char __user *buff, size_t count, loff
 
 /*
 ** This function will be called when we write the Device file
-*  echo "HHGD_RELAY_1 1" > /dev/hhgd
+*  echo "HHGD_RELAY_IN1 1" > /dev/hhgd
 */
 ssize_t hhgd_ioctl_write(struct file *filp, const char __user *buff, size_t len, loff_t *off)
 {
@@ -223,26 +222,28 @@ ssize_t hhgd_ioctl_write(struct file *filp, const char __user *buff, size_t len,
 
     switch (parsed.type)
     {
-    case HHGD_LED:
-        //hhgd_led_set_state(parsed.status);
-        hhgd_relay_1 = parsed.status;
+    case HHGD_LED_GREEN:
+        hhgd_led_green = parsed.status;
         break;
-    case HHGD_BUTTON:
+    case HHGD_LED_RED:
+        hhgd_led_red = parsed.status;
         break;
-    case HHGD_RELAY_1:
-        hhgd_relay_1 = parsed.status;
+    case HHGD_RELAY_IN1:
+        hhgd_relay_in1 = parsed.status;
         break;
-    case HHGD_RELAY_2:
-        hhgd_relay_2 = parsed.status;
+    case HHGD_RELAY_IN2:
+        hhgd_relay_in2 = parsed.status;
         break;
-    case HHGD_RELAY_3:
-        hhgd_relay_3 = parsed.status;
+    case HHGD_RELAY_IN3:
+        hhgd_relay_in3 = parsed.status;
         break;
-    case HHGD_RELAY_4:
-        hhgd_relay_4 = parsed.status;
+    case HHGD_RELAY_IN4:
+        hhgd_relay_in4 = parsed.status;
         break;
     case HHGD_LCD:  
         strncpy(hhgd_lcd, parsed.buff, sizeof(hhgd_lcd));
+        break;
+    default:
         break;
     }
 
@@ -263,48 +264,60 @@ long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long 
 
     switch (ioctl_command)
     {
-    case HHGD_LED:   
-    {
-
-        break;
-    }
-        
-    case HHGD_BUTTON:
+    case HHGD_BUTTON_NEXT ... HHGD_BUTTON_BEFORE:
         {
-            bool value = 0;
-            if( copy_from_user(&value, arg_ptr, sizeof(bool)) ){
+            pr_info("No action for buttons");
+        }
+        break;
+    case HHGD_RELAY_IN1:
+        {
+            if( copy_from_user(&hhgd_relay_in1, arg_ptr, sizeof(hhgd_relay_in1)) )
+            {
                 pr_err("Failed to copy from user space buffer");
                 return -EFAULT;
             }
         }
         break;
-    case HHGD_RELAY_1:
+    case HHGD_RELAY_IN2:
         {
-            if( copy_from_user(&hhgd_relay_1, arg_ptr, sizeof(hhgd_relay_1)) ){
+            if( copy_from_user(&hhgd_relay_in2, arg_ptr, sizeof(hhgd_relay_in2)) )
+            {
                 pr_err("Failed to copy from user space buffer");
                 return -EFAULT;
             }
         }
         break;
-    case HHGD_RELAY_2:
+    case HHGD_RELAY_IN3:
         {
-            if( copy_from_user(&hhgd_relay_2, arg_ptr, sizeof(hhgd_relay_2)) ){
+            if( copy_from_user(&hhgd_relay_in3, arg_ptr, sizeof(hhgd_relay_in3)) )
+            {
                 pr_err("Failed to copy from user space buffer");
                 return -EFAULT;
             }
         }
         break;
-    case HHGD_RELAY_3:
+    case HHGD_RELAY_IN4:
         {
-            if( copy_from_user(&hhgd_relay_3, arg_ptr, sizeof(hhgd_relay_3)) ){
+            if( copy_from_user(&hhgd_relay_in4, arg_ptr, sizeof(hhgd_relay_in4)) )
+            {
                 pr_err("Failed to copy from user space buffer");
                 return -EFAULT;
             }
         }
         break;
-    case HHGD_RELAY_4:
+    case HHGD_LED_GREEN:
         {
-            if( copy_from_user(&hhgd_relay_4, arg_ptr, sizeof(hhgd_relay_4)) ){
+            if( copy_from_user(&hhgd_led_green, arg_ptr, sizeof(hhgd_led_green)) )
+            {
+                pr_err("Failed to copy from user space buffer");
+                return -EFAULT;
+            }
+        }
+        break;
+    case HHGD_LED_RED:
+        {
+            if( copy_from_user(&hhgd_led_red, arg_ptr, sizeof(hhgd_led_red)) )
+            {
                 pr_err("Failed to copy from user space buffer");
                 return -EFAULT;
             }
@@ -312,7 +325,8 @@ long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long 
         break;
     case HHGD_LCD:
         {
-            if( copy_from_user(hhgd_lcd, arg_ptr, sizeof(hhgd_lcd)) ){
+            if( copy_from_user(hhgd_lcd, arg_ptr, sizeof(hhgd_lcd)) )
+            {
                 pr_err("Failed to copy from user space buffer");
                 return -EFAULT;
             }
@@ -322,6 +336,7 @@ long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long 
 
     return 0;
 }
+
 
 /**
  * @brief Change access permission in user space
@@ -337,7 +352,6 @@ int hhgd_uevent(struct device *dev, struct kobj_uevent_env *env)
 */
 int __init hhgd_driver_init(void)
 {
-
     /*Allocating Major number*/
     if ((alloc_chrdev_region(&hhgd_dev, HHGD_MAJOR_NUM_START, HHGD_MINOR_NUM_COUNT, HHGD_DRIVER_NAME)) < 0)
     {
