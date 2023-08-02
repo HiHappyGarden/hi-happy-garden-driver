@@ -40,6 +40,7 @@ enum hhgd_type
     HHGD_BUTTON_NEXT,
     HHGD_BUTTON_BEFORE,
     HHGD_LCD,
+    HHGD_NONE,
 };
 
 

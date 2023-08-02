@@ -35,7 +35,8 @@
 #endif
 
 #define READ_BUFF_LEN (256)
-#define NOT_DEF (3)
+#define DATA_FROM_USER "/tmp/hhgd_buttons"
+
 
 static bool hhgd_led_green  = 0;
 static bool hhgd_led_red    = 0;
@@ -47,13 +48,74 @@ static char hhgd_lcd[34]    = { [0 ... 33] = 0 };
 
 struct task_struct* read_buttons_task = NULL;
 static atomic_t read_buttons_run = ATOMIC_INIT(0);
+
+static __attribute__((__nonnull__)) void read_from_user(enum hhgd_type* button_trigger)  
+{
+    struct file *input_fd = filp_open(DATA_FROM_USER, O_RDONLY, 0);
+    if (!IS_ERR (input_fd))
+    {
+        pr_info("Open " DATA_FROM_USER);
+        char buffer[1024]= { [0 ... 1023] = 0 };
+        loff_t pos = 0;
+        char* ptr = NULL;     
+        kernel_read(input_fd, buffer, sizeof(buffer) - 1, &pos);
+        pr_info("-->%s-%s", buffer, HHGD_TO_STR(HHGD_BUTTON_NEXT));
+        if( (ptr = strstr(buffer, HHGD_TO_STR(HHGD_BUTTON_NEXT))) != NULL)
+        {
+            *button_trigger = HHGD_BUTTON_NEXT;
+        }
+        else if( (ptr = strstr(buffer, HHGD_TO_STR(HHGD_BUTTON_BEFORE))) != NULL)
+        {
+            *button_trigger = HHGD_BUTTON_BEFORE;
+        }
+        else
+        {
+            *button_trigger = HHGD_NONE;
+        }
+    }
+
+    filp_close(input_fd, NULL);
+}
+
+static void clear_from_user(void)
+{
+    static const char buffer[1024]= { [0 ... 1023] = 0 };
+
+    struct file *output_fd = filp_open(DATA_FROM_USER, O_WRONLY|O_CREAT, 0644);
+    if (!IS_ERR (output_fd))
+    {
+        loff_t pos = 0;
+        kernel_write(output_fd, buffer, sizeof(buffer), &pos);
+        pr_info("press HHGD_BUTTON_NEXT");
+    }
+    filp_close(output_fd, NULL);
+}
+
 static int read_buttons_fn(void *pv)
 {
     while(atomic_read(&read_buttons_run))
     {
-        pr_info("In EmbeTronicX Thread Function");
+        enum hhgd_type button_trigger = HHGD_NONE;
+        read_from_user(&button_trigger);
+        switch (button_trigger)
+        {
+        case HHGD_BUTTON_NEXT:
+        {
+            pr_info("press HHGD_BUTTON_NEXT");
+        }
+        break;
+        case HHGD_BUTTON_BEFORE:
+        {
+            pr_info("press HHGD_BUTTON_BEFORE");
+        }
+        break;    
+        default:
+            break;
+        }
+        clear_from_user();
         msleep(1000);
     }
+    pr_info("read_buttons_fn end");
     return 0;
 }
 
