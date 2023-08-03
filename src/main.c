@@ -34,7 +34,7 @@
 #define pr_fmt(fmt) HHGD_DRIVER_NAME ": " fmt
 #endif
 
-#define HGD_SIGETX 44
+#define HHGD_SIGETX 44
 #define READ_BUFF_LEN (256)
 #define BUTTON_TRIGGER_FILE_PATH "/tmp/hhgd_buttons"
 #define BUTTON_TRIGGER_BUFFER_SIZE (24)
@@ -105,28 +105,32 @@ static int read_buttons_fn(void *pv)
         {
         case HHGD_BUTTON_NEXT:
         {
-            pr_info("press HHGD_BUTTON_NEXT");
+            pr_info("Press HHGD_BUTTON_NEXT");
 
-            struct kernel_siginfo info;
+            if(task)
+            {
+                pr_err("Current task NULL");
+            }
 
-
-
-    // Sending signal to app
-    memset(&info, 0, sizeof(struct kernel_siginfo));
-    info.si_signo = HGD_SIGETX;
-
-    // This is bit of a trickery: SI_QUEUE is normally used by sigqueue from user space,    and kernel space should use SI_KERNEL. 
-    // But if SI_KERNEL is used the real_time data  is not delivered to the user space signal handler function. */
-    info.si_code = SI_QUEUE;
-
-    // real time signals may have 32 bits of data.
-    info.si_int = HHGD_BUTTON_NEXT_ON;
+            struct kernel_siginfo info = {0};
 
 
+            // Sending signal to app
+            memset(&info, 0, sizeof(struct kernel_siginfo));
+            info.si_signo = HHGD_SIGETX;
 
-		/* Send the signal */
-		if(send_sig_info(HGD_SIGETX, (struct kernel_siginfo*) &info, task) < 0) 
-			printk("gpio_irq_signal: Error sending signal\n");
+            // This is bit of a trickery: SI_QUEUE is normally used by sigqueue from user space,    and kernel space should use SI_KERNEL. 
+            // But if SI_KERNEL is used the real_time data  is not delivered to the user space signal handler function. */
+            info.si_code = SI_QUEUE;
+
+            // real time signals may have 32 bits of data.
+            info.si_int = HHGD_BUTTON_NEXT_ON;
+
+
+
+            /* Send the signal */
+            if(send_sig_info(HHGD_SIGETX, &info, task) < 0) 
+                printk("error sending signal\n");
 
 
             clear_from_user();
@@ -134,28 +138,29 @@ static int read_buttons_fn(void *pv)
         break;
         case HHGD_BUTTON_BEFORE:
         {
-            pr_info("press HHGD_BUTTON_BEFORE");
+            pr_info("Press HHGD_BUTTON_BEFORE");
+            if(task)
+            {
+                pr_err("Current task NULL");
+            }
 
-           struct kernel_siginfo info;
+            struct kernel_siginfo info = {0};
+
+            // Sending signal to app
+            memset(&info, 0, sizeof(struct kernel_siginfo));
+            info.si_signo = HHGD_SIGETX;
+
+            // This is bit of a trickery: SI_QUEUE is normally used by sigqueue from user space,    and kernel space should use SI_KERNEL. 
+            // But if SI_KERNEL is used the real_time data  is not delivered to the user space signal handler function. */
+            info.si_code = SI_QUEUE;
+
+            // real time signals may have 32 bits of data.
+            info.si_int = HHGD_BUTTON_BEFORE_ON;
 
 
-
-    // Sending signal to app
-    memset(&info, 0, sizeof(struct kernel_siginfo));
-    info.si_signo = HGD_SIGETX;
-
-    // This is bit of a trickery: SI_QUEUE is normally used by sigqueue from user space,    and kernel space should use SI_KERNEL. 
-    // But if SI_KERNEL is used the real_time data  is not delivered to the user space signal handler function. */
-    info.si_code = SI_QUEUE;
-
-    // real time signals may have 32 bits of data.
-    info.si_int = HHGD_BUTTON_BEFORE_ON;
-
-
-
-		/* Send the signal */
-		if(send_sig_info(HGD_SIGETX, (struct kernel_siginfo*) &info, task) < 0) 
-			printk("gpio_irq_signal: Error sending signal\n");
+            /* Send the signal */
+            if(send_sig_info(HHGD_SIGETX, &info, task) < 0) 
+                printk("error sending signal\n");
 
 
 
@@ -252,14 +257,11 @@ int hhgd_ioctl_open(struct inode *inode, struct file *file)
 {
     if (atomic_read(&device_busy) > 0)
     {
-        pr_err("device busy");
+        pr_err("Device busy");
         return -EBUSY;
     }
 
     atomic_inc(&device_busy);
-
-task = get_current();
-		pr_info("gpio_irq_signal: Userspace app with PID %d is registered\n", task->pid);
 
     pr_info("Device open:%u\n", atomic_read(&device_busy));
     return 0;
@@ -516,6 +518,12 @@ int __init hhgd_driver_init(void)
         pr_err("Cannot create the Device \n");
         goto r_device;
     }
+
+
+
+    task = get_current();
+	pr_info("Curren task PID %d is registered\n", task->pid);
+
 
     atomic_inc(&read_buttons_run);
     read_buttons_task = kthread_run(read_buttons_fn, NULL, "read_buttons_task"); 
