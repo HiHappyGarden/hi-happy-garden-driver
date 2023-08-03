@@ -15,6 +15,7 @@
         "ioctl.h": "c",
         "lcd.h": "c",
         "type_traits": "c",
-        "constants.h": "c"
+        "constants.h": "c",
+        "errno.h": "c"
     }
 }

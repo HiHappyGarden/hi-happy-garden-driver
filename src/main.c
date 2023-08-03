@@ -34,7 +34,6 @@
 #define pr_fmt(fmt) HHGD_DRIVER_NAME ": " fmt
 #endif
 
-#define HHGD_SIGETX 44
 #define READ_BUFF_LEN (256)
 #define BUTTON_TRIGGER_FILE_PATH "/tmp/hhgd_buttons"
 #define BUTTON_TRIGGER_BUFFER_SIZE (24)
@@ -105,7 +104,7 @@ static int read_buttons_fn(void *pv)
         {
         case HHGD_BUTTON_NEXT:
         {
-            pr_info("Press HHGD_BUTTON_NEXT");
+            pr_info("Pressed HHGD_BUTTON_NEXT");
 
             if(task)
             {
@@ -113,7 +112,6 @@ static int read_buttons_fn(void *pv)
             }
 
             struct kernel_siginfo info = {0};
-
 
             // Sending signal to app
             memset(&info, 0, sizeof(struct kernel_siginfo));
@@ -126,19 +124,16 @@ static int read_buttons_fn(void *pv)
             // real time signals may have 32 bits of data.
             info.si_int = HHGD_BUTTON_NEXT_ON;
 
-
-
             /* Send the signal */
             if(send_sig_info(HHGD_SIGETX, &info, task) < 0) 
                 printk("error sending signal\n");
-
 
             clear_from_user();
         }
         break;
         case HHGD_BUTTON_BEFORE:
         {
-            pr_info("Press HHGD_BUTTON_BEFORE");
+            pr_info("Pressed HHGD_BUTTON_BEFORE");
             if(task)
             {
                 pr_err("Current task NULL");
@@ -157,12 +152,9 @@ static int read_buttons_fn(void *pv)
             // real time signals may have 32 bits of data.
             info.si_int = HHGD_BUTTON_BEFORE_ON;
 
-
             /* Send the signal */
             if(send_sig_info(HHGD_SIGETX, &info, task) < 0) 
                 printk("error sending signal\n");
-
-
 
             clear_from_user();
         }
@@ -263,6 +255,9 @@ int hhgd_ioctl_open(struct inode *inode, struct file *file)
 
     atomic_inc(&device_busy);
 
+    task = get_current();
+	pr_info("Current user task PID %d is registered\n", task->pid);
+
     pr_info("Device open:%u\n", atomic_read(&device_busy));
     return 0;
 }
@@ -274,6 +269,8 @@ int hhgd_ioctl_release(struct inode *inode, struct file *file)
 {
 
     // hhgd_button_release();
+
+    task = NULL;
 
     atomic_sub(1, &device_busy);
 
@@ -520,11 +517,6 @@ int __init hhgd_driver_init(void)
     }
 
 
-
-    task = get_current();
-	pr_info("Curren task PID %d is registered\n", task->pid);
-
-
     atomic_inc(&read_buttons_run);
     read_buttons_task = kthread_run(read_buttons_fn, NULL, "read_buttons_task"); 
     if(read_buttons_task) 
@@ -574,4 +566,4 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Antonio Salsi <passy.linux@zresa.it>");
 MODULE_DESCRIPTION("Hi Happy Garden driver to SIMULATE access to hardware resources");
 MODULE_INFO(intree, "Y");
-MODULE_VERSION("0.10.0");
+MODULE_VERSION("0.20.0");
