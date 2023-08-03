@@ -34,9 +34,10 @@
 #define pr_fmt(fmt) HHGD_DRIVER_NAME ": " fmt
 #endif
 
+#define HGD_SIGETX 44
 #define READ_BUFF_LEN (256)
-#define DATA_FROM_USER "/tmp/hhgd_buttons"
-
+#define BUTTON_TRIGGER_FILE_PATH "/tmp/hhgd_buttons"
+#define BUTTON_TRIGGER_BUFFER_SIZE (24)
 
 static bool hhgd_led_green  = 0;
 static bool hhgd_led_red    = 0;
@@ -46,20 +47,19 @@ static bool hhgd_relay_in3  = 0;
 static bool hhgd_relay_in4  = 0;
 static char hhgd_lcd[34]    = { [0 ... 33] = 0 };
 
+struct task_struct* task = NULL;
 struct task_struct* read_buttons_task = NULL;
 static atomic_t read_buttons_run = ATOMIC_INIT(0);
 
 static __attribute__((__nonnull__)) void read_from_user(enum hhgd_type* button_trigger)  
 {
-    struct file *input_fd = filp_open(DATA_FROM_USER, O_RDONLY, 0);
+    struct file *input_fd = filp_open(BUTTON_TRIGGER_FILE_PATH, O_RDONLY, 0);
     if (!IS_ERR (input_fd))
     {
-        pr_info("Open " DATA_FROM_USER);
-        char buffer[1024]= { [0 ... 1023] = 0 };
+        char buffer[BUTTON_TRIGGER_BUFFER_SIZE]= { [0 ... BUTTON_TRIGGER_BUFFER_SIZE -1] = 0 };
         loff_t pos = 0;
         char* ptr = NULL;     
         kernel_read(input_fd, buffer, sizeof(buffer) - 1, &pos);
-        pr_info("-->%s-%s", buffer, HHGD_TO_STR(HHGD_BUTTON_NEXT));
         if( (ptr = strstr(buffer, HHGD_TO_STR(HHGD_BUTTON_NEXT))) != NULL)
         {
             *button_trigger = HHGD_BUTTON_NEXT;
@@ -72,23 +72,27 @@ static __attribute__((__nonnull__)) void read_from_user(enum hhgd_type* button_t
         {
             *button_trigger = HHGD_NONE;
         }
+        filp_close(input_fd, NULL);
     }
-
-    filp_close(input_fd, NULL);
+    else
+    {
+        *button_trigger = HHGD_NONE;
+    }
+    
 }
 
 static void clear_from_user(void)
 {
-    static const char buffer[1024]= { [0 ... 1023] = 0 };
+    static const char buffer[BUTTON_TRIGGER_BUFFER_SIZE]= { [0 ... BUTTON_TRIGGER_BUFFER_SIZE -1] = 0 };
 
-    struct file *output_fd = filp_open(DATA_FROM_USER, O_WRONLY|O_CREAT, 0644);
+    struct file *output_fd = filp_open(BUTTON_TRIGGER_FILE_PATH, O_WRONLY|O_CREAT, 0644);
     if (!IS_ERR (output_fd))
     {
         loff_t pos = 0;
         kernel_write(output_fd, buffer, sizeof(buffer), &pos);
-        pr_info("press HHGD_BUTTON_NEXT");
+        filp_close(output_fd, NULL);
     }
-    filp_close(output_fd, NULL);
+    
 }
 
 static int read_buttons_fn(void *pv)
@@ -102,17 +106,66 @@ static int read_buttons_fn(void *pv)
         case HHGD_BUTTON_NEXT:
         {
             pr_info("press HHGD_BUTTON_NEXT");
+
+            struct kernel_siginfo info;
+
+
+
+    // Sending signal to app
+    memset(&info, 0, sizeof(struct kernel_siginfo));
+    info.si_signo = HGD_SIGETX;
+
+    // This is bit of a trickery: SI_QUEUE is normally used by sigqueue from user space,    and kernel space should use SI_KERNEL. 
+    // But if SI_KERNEL is used the real_time data  is not delivered to the user space signal handler function. */
+    info.si_code = SI_QUEUE;
+
+    // real time signals may have 32 bits of data.
+    info.si_int = HHGD_BUTTON_NEXT_ON;
+
+
+
+		/* Send the signal */
+		if(send_sig_info(HGD_SIGETX, (struct kernel_siginfo*) &info, task) < 0) 
+			printk("gpio_irq_signal: Error sending signal\n");
+
+
+            clear_from_user();
         }
         break;
         case HHGD_BUTTON_BEFORE:
         {
             pr_info("press HHGD_BUTTON_BEFORE");
+
+           struct kernel_siginfo info;
+
+
+
+    // Sending signal to app
+    memset(&info, 0, sizeof(struct kernel_siginfo));
+    info.si_signo = HGD_SIGETX;
+
+    // This is bit of a trickery: SI_QUEUE is normally used by sigqueue from user space,    and kernel space should use SI_KERNEL. 
+    // But if SI_KERNEL is used the real_time data  is not delivered to the user space signal handler function. */
+    info.si_code = SI_QUEUE;
+
+    // real time signals may have 32 bits of data.
+    info.si_int = HHGD_BUTTON_BEFORE_ON;
+
+
+
+		/* Send the signal */
+		if(send_sig_info(HGD_SIGETX, (struct kernel_siginfo*) &info, task) < 0) 
+			printk("gpio_irq_signal: Error sending signal\n");
+
+
+
+            clear_from_user();
         }
         break;    
         default:
             break;
         }
-        clear_from_user();
+        
         msleep(1000);
     }
     pr_info("read_buttons_fn end");
@@ -204,6 +257,9 @@ int hhgd_ioctl_open(struct inode *inode, struct file *file)
     }
 
     atomic_inc(&device_busy);
+
+task = get_current();
+		pr_info("gpio_irq_signal: Userspace app with PID %d is registered\n", task->pid);
 
     pr_info("Device open:%u\n", atomic_read(&device_busy));
     return 0;
