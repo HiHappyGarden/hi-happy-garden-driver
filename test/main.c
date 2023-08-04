@@ -29,12 +29,6 @@ enum hhgd_type
     HHGD_NONE,
 };
 
-enum hhgd_button_status
-{
-    HHGD_BUTTON_NEXT_ON = 0x01,
-    HHGD_BUTTON_BEFORE_ON = 0x02
-};
-
 
 static bool done = false;
 static int32_t check = 0;
@@ -57,7 +51,7 @@ void sig_event_handler(int n, siginfo_t *info, void *unused)
         printf ("Received signal from kernel : Value =  %u\n", check);
 		switch (info->si_int)
 		{
-		case HHGD_BUTTON_NEXT_ON:
+		case HHGD_BUTTON_NEXT:
 			printf ("Handled HHGD_BUTTON_NEXT on LCD\n");
 		
 			char msg[34] = "Handled HHGD_BUTTON_NEXT";
@@ -67,7 +61,7 @@ void sig_event_handler(int n, siginfo_t *info, void *unused)
 			}
 
 			break;
-		case HHGD_BUTTON_BEFORE_ON:
+		case HHGD_BUTTON_BEFORE:
 			printf ("Handled HHGD_BUTTON_BEFORE turn on HHGD_LED_GREEN\n");
 			uint32_t value = 1;
 			if( ioctl( fd, HHGD_LED_GREEN, &value) < 0)

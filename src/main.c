@@ -124,7 +124,7 @@ static int read_buttons_fn(void *pv)
             info.si_code = SI_QUEUE;
 
             // real time signals may have 32 bits of data.
-            info.si_int = HHGD_BUTTON_NEXT_ON;
+            info.si_int = HHGD_BUTTON_NEXT;
 
             /* Send the signal */
             if(send_sig_info(HHGD_SIGETX, &info, task) < 0) 
@@ -154,7 +154,7 @@ static int read_buttons_fn(void *pv)
             info.si_code = SI_QUEUE;
 
             // real time signals may have 32 bits of data.
-            info.si_int = HHGD_BUTTON_BEFORE_ON;
+            info.si_int = HHGD_BUTTON_BEFORE;
 
             /* Send the signal */
             if(send_sig_info(HHGD_SIGETX, &info, task) < 0) 

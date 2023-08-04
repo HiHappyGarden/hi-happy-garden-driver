@@ -44,10 +44,4 @@ enum hhgd_type
     HHGD_NONE,
 };
 
-enum hhgd_button_status
-{
-    HHGD_BUTTON_NEXT_ON = 0x01,
-    HHGD_BUTTON_BEFORE_ON = 0x02
-};
-
 #endif
