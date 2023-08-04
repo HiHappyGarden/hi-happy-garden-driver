@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
 
 //cc main.c -o main
 
@@ -35,87 +36,94 @@ enum hhgd_button_status
 };
 
 
-static void signal_handler(int sig) {
-	printf("Button was pressed type %d!\n", sig);
-}
-
-static void signal_handler_info(int sig, siginfo_t *info, void *context)
+static bool done = false;
+static int32_t check = 0;
+static int32_t fd;
+ 
+void ctrl_c_handler(int n, siginfo_t *info, void *unused)
 {
-	printf("Button was pressed type %d ", sig);
-	if(info)
+    if (n == SIGINT) 
 	{
-		printf("info %d", info->si_value);
-	}
-	printf("!");
+        printf("\nrecieved ctrl-c\n");
+        done = true;
+    }
+}
+ 
+void sig_event_handler(int n, siginfo_t *info, void *unused)
+{
+    if (n == SIGETX) 
+	{
+        check = info->si_int;
+        printf ("Received signal from kernel : Value =  %u\n", check);
+		switch (info->si_int)
+		{
+		case HHGD_BUTTON_NEXT_ON:
+			printf ("Handled HHGD_BUTTON_NEXT on LCD\n");
+		
+			char msg[34] = "Handled HHGD_BUTTON_NEXT";
+			if( ioctl( fd, HHGD_LCD, msg) < 0)
+			{
+				perror("Fail handle HHGD_BUTTON_NEXT");
+			}
 
+			break;
+		case HHGD_BUTTON_BEFORE_ON:
+			printf ("Handled HHGD_BUTTON_BEFORE turn on HHGD_LED_GREEN\n");
+			uint32_t value = 1;
+			if( ioctl( fd, HHGD_LED_GREEN, &value) < 0)
+			{
+				perror("Fail handle HHGD_BUTTON_BEFORE");
+			}
+			break;
+		default:
+            printf ("No handled signal value =  %u\n", check);
+			break;
+		}
+    }
 }
 
-int main() {
-	int fd;
-	//signal(SIGETX, signal_handler);
+int main()
+{
+    int32_t value, number;
+    struct sigaction act;
 
-	struct sigaction sa = {
-		.sa_sigaction = signal_handler_info,
-		.sa_flags = SA_SIGINFO
-	};
-	sigset_t mask = {0};
 
-	// memset(&sa, 0x00, sizeof(sa));
-	// sa.sa_sigaction = signal_handler_info;
-	// sa.sa_flags = SA_SIGINFO;
-
-	sigemptyset(&sa.sa_mask);
-
-	if (sigaction(SIGINT, &sa, NULL) == -1)
+    sigemptyset (&act.sa_mask);
+    act.sa_flags = (SA_SIGINFO | SA_RESETHAND);
+    act.sa_sigaction = ctrl_c_handler;
+    sigaction (SIGINT, &act, NULL);
+ 
+    /* install custom signal handler */
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = (SA_SIGINFO | SA_RESTART);
+    act.sa_sigaction = sig_event_handler;
+    sigaction(SIGETX, &act, NULL);
+ 
+ 
+    fd = open("/dev/hhgd", O_RDWR);
+    if(fd < 0) 
 	{
-		perror("Could not register signal");
-		exit(1);
-	}
-    sigemptyset(&mask);
-    sigaddset(&mask, SIGINT);
-
-	printf("PID: %d\n", getpid());
-
-	/* Open the device file */
-	fd = open("/dev/hhgd", O_RDWR | O_NDELAY);
-	if(fd < 0) {
-		perror("Could not open device file");
-		return -1;
-	}
-
-// 	int status = 1;
-// 	if( ioctl( fd, HHGD_RELAY_IN3, &status) < 0)
-// 	{
-		
-// 	}
-		
-// 	char msg[34] = "ciao";
-// 	if( ioctl( fd, HHGD_LCD, &msg) < 0)
-// 	{
-		
-// 	}
-
-	/* Register app to KM */
-	uint32_t foo;
-	if(ioctl(fd, REGISTER_APP, &foo)) 
+		perror("Cannot open device file");
+		return 0;
+    }
+ 
+    if (ioctl(fd, REGISTER_APP,(int32_t*) &number)) 
 	{
-		printf("Error registering app %d\n", errno);
-		close(fd);
-		return -1;
-	}
+        perror("Failed");
+        close(fd);
+        exit(1);
+    }
+   
+    while(!done) {
+        printf("Waiting for signal...\n");
+ 
+        //blocking check
+        while (!done && !check)
+        {
+            sleep(1);
+        }
+        check = 0;
+    }
 
-
-	/* Wait for Signal */
-	printf("Wait for signal...\n");
-
-	while(1)
-	{
-		sigprocmask(SIG_BLOCK, &mask, NULL);
-        sleep(3);
-        sigprocmask(SIG_UNBLOCK, &mask, NULL);
-	}
-
-	close(fd);
-
-	return 0;
+    close(fd);
 }
