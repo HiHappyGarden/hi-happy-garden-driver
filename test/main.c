@@ -6,10 +6,11 @@
 #include <signal.h>
 #include <errno.h>
 #include <stdint.h>
+#include <string.h>
 
 //cc main.c -o main
 
-#define SIGETX 44
+#define SIGETX 10
 #define REGISTER_APP _IOW('a','a',uint32_t*)	
 
 
@@ -33,15 +34,45 @@ enum hhgd_button_status
     HHGD_BUTTON_BEFORE_ON = 0x02
 };
 
-static 	uint32_t value;
 
-void car(int sig) {
-	printf("Button was pressed type %u!\n", value);
+static void signal_handler(int sig) {
+	printf("Button was pressed type %d!\n", sig);
+}
+
+static void signal_handler_info(int sig, siginfo_t *info, void *context)
+{
+	printf("Button was pressed type %d ", sig);
+	if(info)
+	{
+		printf("info %d", info->si_value);
+	}
+	printf("!");
+
 }
 
 int main() {
 	int fd;
-	signal(SIGETX, signalhandler);
+	//signal(SIGETX, signal_handler);
+
+	struct sigaction sa = {
+		.sa_sigaction = signal_handler_info,
+		.sa_flags = SA_SIGINFO
+	};
+	sigset_t mask = {0};
+
+	// memset(&sa, 0x00, sizeof(sa));
+	// sa.sa_sigaction = signal_handler_info;
+	// sa.sa_flags = SA_SIGINFO;
+
+	sigemptyset(&sa.sa_mask);
+
+	if (sigaction(SIGINT, &sa, NULL) == -1)
+	{
+		perror("Could not register signal");
+		exit(1);
+	}
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGINT);
 
 	printf("PID: %d\n", getpid());
 
@@ -51,8 +82,6 @@ int main() {
 		perror("Could not open device file");
 		return -1;
 	}
-
-// printf("---1 \n");	
 
 // 	int status = 1;
 // 	if( ioctl( fd, HHGD_RELAY_IN3, &status) < 0)
@@ -67,7 +96,8 @@ int main() {
 // 	}
 
 	/* Register app to KM */
-	if(ioctl(fd, REGISTER_APP, &value)) 
+	uint32_t foo;
+	if(ioctl(fd, REGISTER_APP, &foo)) 
 	{
 		printf("Error registering app %d\n", errno);
 		close(fd);
@@ -79,7 +109,12 @@ int main() {
 	printf("Wait for signal...\n");
 
 	while(1)
-		sleep(1);
+	{
+		sigprocmask(SIG_BLOCK, &mask, NULL);
+        sleep(3);
+        sigprocmask(SIG_UNBLOCK, &mask, NULL);
+	}
+
 	close(fd);
 
 	return 0;

@@ -261,9 +261,8 @@ int hhgd_ioctl_open(struct inode *inode, struct file *file)
     atomic_inc(&device_busy);
 
     task = get_current();
-	pr_info("Current user task PID %d is registered", task->pid);
 
-    pr_info("Device open:%u\n", atomic_read(&device_busy));
+    pr_info("Current user task PID %d device_busy:%u is lock", task->pid, atomic_read(&device_busy));
     return 0;
 }
 
@@ -272,15 +271,12 @@ int hhgd_ioctl_open(struct inode *inode, struct file *file)
 */
 int hhgd_ioctl_release(struct inode *inode, struct file *file)
 {
-
-    // hhgd_button_release();
-
-    pr_info("Current user task PID %d is released", task->pid);
+    pid_t pid = task->pid;
     task = NULL;
 
     atomic_sub(1, &device_busy);
 
-    pr_info("Device release:%u\n", atomic_read(&device_busy));
+    pr_info("Current user task PID %d device_busy:%u is released", pid, atomic_read(&device_busy));
     return 0;
 }
 

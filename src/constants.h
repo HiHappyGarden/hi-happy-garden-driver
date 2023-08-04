@@ -25,7 +25,7 @@
 #define HHGD_CLASS_NAME "hhgd"
 #define HHGD_MAJOR_NUM_START (0)
 #define HHGD_MINOR_NUM_COUNT (1)
-#define HHGD_SIGETX 44
+#define HHGD_SIGETX 10
 
 typedef unsigned char u8;
 typedef void* hhgd_ptr;
