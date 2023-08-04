@@ -106,9 +106,11 @@ static int read_buttons_fn(void *pv)
         {
             pr_info("Pressed HHGD_BUTTON_NEXT");
 
-            if(task)
+            if(task == NULL)
             {
+                clear_from_user();
                 pr_err("Current task NULL");
+                break;
             }
 
             struct kernel_siginfo info = {0};
@@ -134,9 +136,11 @@ static int read_buttons_fn(void *pv)
         case HHGD_BUTTON_BEFORE:
         {
             pr_info("Pressed HHGD_BUTTON_BEFORE");
-            if(task)
+            if(task == NULL)
             {
+                clear_from_user();
                 pr_err("Current task NULL");
+                break;
             }
 
             struct kernel_siginfo info = {0};
@@ -160,6 +164,7 @@ static int read_buttons_fn(void *pv)
         }
         break;    
         default:
+            clear_from_user();
             break;
         }
         
@@ -256,7 +261,7 @@ int hhgd_ioctl_open(struct inode *inode, struct file *file)
     atomic_inc(&device_busy);
 
     task = get_current();
-	pr_info("Current user task PID %d is registered\n", task->pid);
+	pr_info("Current user task PID %d is registered", task->pid);
 
     pr_info("Device open:%u\n", atomic_read(&device_busy));
     return 0;
@@ -270,6 +275,7 @@ int hhgd_ioctl_release(struct inode *inode, struct file *file)
 
     // hhgd_button_release();
 
+    pr_info("Current user task PID %d is released", task->pid);
     task = NULL;
 
     atomic_sub(1, &device_busy);

@@ -35,7 +35,7 @@ enum hhgd_button_status
 
 static 	uint32_t value;
 
-void signalhandler(int sig) {
+void car(int sig) {
 	printf("Button was pressed type %u!\n", value);
 }
 
@@ -52,19 +52,19 @@ int main() {
 		return -1;
 	}
 
-printf("---1 \n");	
+// printf("---1 \n");	
 
-	int status = 1;
-	if( ioctl( fd, HHGD_RELAY_IN3, &status) < 0)
-	{
+// 	int status = 1;
+// 	if( ioctl( fd, HHGD_RELAY_IN3, &status) < 0)
+// 	{
 		
-	}
+// 	}
 		
-	char msg[34] = "ciao";
-	if( ioctl( fd, HHGD_LCD, &msg) < 0)
-	{
+// 	char msg[34] = "ciao";
+// 	if( ioctl( fd, HHGD_LCD, &msg) < 0)
+// 	{
 		
-	}
+// 	}
 
 	/* Register app to KM */
 	if(ioctl(fd, REGISTER_APP, &value)) 
