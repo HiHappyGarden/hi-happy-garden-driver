@@ -96,7 +96,7 @@ static void clear_from_user(void)
     
 }
 
-static int read_buttons_fn(void *pv)
+static int read_buttons_thread(void *pv)
 {
     while(atomic_read(&read_buttons_run))
     {
@@ -175,9 +175,9 @@ static int read_buttons_fn(void *pv)
             break;
         }
         
-        msleep(1000);
+        msleep(100);
     }
-    pr_info("read_buttons_fn end");
+    pr_info("read_buttons_thread end");
     return 0;
 }
 
@@ -656,7 +656,7 @@ int __init hhgd_driver_init(void)
 
 
     atomic_inc(&read_buttons_run);
-    read_buttons_task = kthread_run(read_buttons_fn, NULL, "read_buttons_task"); 
+    read_buttons_task = kthread_run(read_buttons_thread, NULL, "read_buttons_task"); 
     if(read_buttons_task) 
     {
         pr_info("Create and start read_buttons_task");
