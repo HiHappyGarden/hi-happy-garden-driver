@@ -27,6 +27,13 @@ enum hhgd_type
     HHGD_BUTTON_BEFORE,
     HHGD_LCD,
     HHGD_NONE,
+    HHGD_MASK = 0x0F,
+};
+
+enum hhgd_action
+{
+    HHGD_READ = 0x40,
+    HHGD_WRITE = 0x80,
 };
 
 
@@ -49,25 +56,40 @@ void sig_event_handler(int n, siginfo_t *info, void *unused)
 	{
         check = info->si_int;
         printf ("Received signal from kernel : Value =  %u\n", check);
-		switch (info->si_int)
+		switch (info->si_int & HHGD_MASK)
 		{
 		case HHGD_BUTTON_NEXT:
 			printf ("Handled HHGD_BUTTON_NEXT on LCD\n");
 		
-			char msg[34] = "Handled HHGD_BUTTON_NEXT";
-			if( ioctl( fd, HHGD_LCD, msg) < 0)
+			char buff[34] = "... handled HHGD_BUTTON_NEXT";
+			if( ioctl(fd, HHGD_LCD | HHGD_WRITE, buff) < 0)
 			{
 				perror("Fail handle HHGD_BUTTON_NEXT");
 			}
 
+            memset(buff, '\0', sizeof buff);
+            if( ioctl(fd, HHGD_LCD | HHGD_READ, buff) < 0)
+			{
+				perror("Fail handle HHGD_BUTTON_NEXT");
+			}
+
+            printf ("Read HHGD_LCD=%s\n", buff);
 			break;
 		case HHGD_BUTTON_BEFORE:
 			printf ("Handled HHGD_BUTTON_BEFORE turn on HHGD_LED_GREEN\n");
 			uint32_t value = 1;
-			if( ioctl( fd, HHGD_LED_GREEN, &value) < 0)
+			if( ioctl( fd, HHGD_LED_GREEN | HHGD_WRITE, &value) < 0)
 			{
 				perror("Fail handle HHGD_BUTTON_BEFORE");
 			}
+
+            value = 0;
+            if( ioctl( fd, HHGD_LED_GREEN | HHGD_READ, &value) < 0)
+			{
+				perror("Fail handle HHGD_BUTTON_BEFORE");
+			}
+
+            printf ("Read HHGD_LED_GREEN=%u\n", value);
 			break;
 		default:
             printf ("No handled signal value =  %u\n", check);

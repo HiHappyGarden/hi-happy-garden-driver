@@ -38,13 +38,15 @@
 #define BUTTON_TRIGGER_FILE_PATH "/tmp/hhgd_buttons"
 #define BUTTON_TRIGGER_BUFFER_SIZE (24)
 
-static bool hhgd_led_green  = 0;
-static bool hhgd_led_red    = 0;
-static bool hhgd_relay_in1  = 0;
-static bool hhgd_relay_in2  = 0;
-static bool hhgd_relay_in3  = 0;
-static bool hhgd_relay_in4  = 0;
-static char hhgd_lcd[34]    = { [0 ... 33] = 0 };
+static bool hhgd_button_next    = 0;
+static bool hhgd_button_before  = 0;
+static bool hhgd_led_green      = 0;
+static bool hhgd_led_red        = 0;
+static bool hhgd_relay_in1      = 0;
+static bool hhgd_relay_in2      = 0;
+static bool hhgd_relay_in3      = 0;
+static bool hhgd_relay_in4      = 0;
+static char hhgd_lcd[34]        = { [0 ... 33] = 0 };
 
 struct task_struct* task = NULL;
 struct task_struct* read_buttons_task = NULL;
@@ -105,6 +107,7 @@ static int read_buttons_fn(void *pv)
         case HHGD_BUTTON_NEXT:
         {
             pr_info("Pressed HHGD_BUTTON_NEXT");
+            hhgd_button_next = 1;
 
             if(task == NULL)
             {
@@ -128,14 +131,17 @@ static int read_buttons_fn(void *pv)
 
             /* Send the signal */
             if(send_sig_info(HHGD_SIGETX, &info, task) < 0) 
-                printk("error sending signal\n");
+                pr_err("Error sending signal");
 
+            hhgd_button_next = 0;
             clear_from_user();
         }
         break;
         case HHGD_BUTTON_BEFORE:
         {
             pr_info("Pressed HHGD_BUTTON_BEFORE");
+            hhgd_button_before = 1;
+
             if(task == NULL)
             {
                 clear_from_user();
@@ -158,8 +164,9 @@ static int read_buttons_fn(void *pv)
 
             /* Send the signal */
             if(send_sig_info(HHGD_SIGETX, &info, task) < 0) 
-                printk("error sending signal\n");
+                pr_err("Error sending signal");
 
+            hhgd_button_before = 1;
             clear_from_user();
         }
         break;    
@@ -291,6 +298,8 @@ ssize_t hhgd_ioctl_read(struct file *filp, char __user *buff, size_t count, loff
 
     msg_len = snprintf(msg,
                     sizeof(msg), 
+                    "HHGD_BUTTON_NEXT:\t%u\n"
+                    "HHGD_BUTTON_BEFORE:\t%u\n"
                     "HHGD_LED_GREEN:\t%u\n"
                     "HHGD_LED_RED:\t%u\n"
                     "HHGD_RELAY_IN1:\t%u\n"
@@ -298,6 +307,8 @@ ssize_t hhgd_ioctl_read(struct file *filp, char __user *buff, size_t count, loff
                     "HHGD_RELAY_IN3:\t%u\n"
                     "HHGD_RELAY_IN4:\t%u\n"
                     "HHGD_LCD:\t%s\n",
+                    hhgd_button_next,
+                    hhgd_button_before,
                     hhgd_led_green,
                     hhgd_led_red,
                     hhgd_relay_in1,
@@ -387,7 +398,7 @@ ssize_t hhgd_ioctl_write(struct file *filp, const char __user *buff, size_t len,
 long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long arg)
 {
     
-    const void* arg_ptr = (const void *)arg;
+    void* arg_ptr = (void *)arg;
 
 	if(arg_ptr == NULL) 
     {
@@ -395,74 +406,199 @@ long hhgd_ioctl( struct file *p_file, unsigned int ioctl_command, unsigned long 
 		return -EINVAL;
 	}
 
-    switch (ioctl_command)
+    switch (ioctl_command & HHGD_MASK)
     {
-    case HHGD_BUTTON_NEXT ... HHGD_BUTTON_BEFORE:
+    case HHGD_BUTTON_NEXT:
         {
-            pr_info("No action for buttons");
+            if(ioctl_command & HHGD_READ)
+            {
+
+            }
+            else
+            {
+                pr_warn("No action for HHGD_BUTTON_NEXT ioctl_command:%u", ioctl_command);
+            }
+        }
+        break;
+    case HHGD_BUTTON_BEFORE:
+        {
+            if(ioctl_command & HHGD_READ)
+            {
+          
+            }
+            else
+            {
+                pr_warn("No action for HHGD_BUTTON_BEFORE ioctl_command:%u", ioctl_command);
+            }
         }
         break;
     case HHGD_RELAY_IN1:
         {
-            if(copy_from_user(&hhgd_relay_in1, arg_ptr, sizeof(hhgd_relay_in1)))
+            if(ioctl_command & HHGD_READ)
             {
-                pr_err("Failed to copy from user space buffer");
-                return -EFAULT;
+                if(copy_to_user(arg_ptr, &hhgd_relay_in1, sizeof(hhgd_relay_in1)))
+                {
+                    pr_err("Failed to copy from kernel space buffer ioctl_command:%u", ioctl_command);
+                    return -EFAULT;
+                }
+            }
+            else if(ioctl_command & HHGD_WRITE)
+            {
+                if(copy_from_user(&hhgd_relay_in1, arg_ptr, sizeof(hhgd_relay_in1)))
+                {
+                    pr_err("Failed to copy from user space buffer ioctl_command:%u", ioctl_command);
+                    return -EFAULT;
+                }
+            }
+            else
+            {
+                pr_warn("No action for HHGD_RELAY_IN1 ioctl_command:%u", ioctl_command);
             }
         }
         break;
     case HHGD_RELAY_IN2:
         {
-            if(copy_from_user(&hhgd_relay_in2, arg_ptr, sizeof(hhgd_relay_in2)))
+            if(ioctl_command & HHGD_READ)
             {
-                pr_err("Failed to copy from user space buffer");
-                return -EFAULT;
+                if(copy_to_user(arg_ptr, &hhgd_relay_in2, sizeof(hhgd_relay_in2)))
+                {
+                    pr_err("Failed to copy from kernel space buffer ioctl_command:%u", ioctl_command);
+                    return -EFAULT;
+                }
+            }
+            else if(ioctl_command & HHGD_WRITE)
+            {
+                if(copy_from_user(&hhgd_relay_in2, arg_ptr, sizeof(hhgd_relay_in2)))
+                {
+                    pr_err("Failed to copy from user space buffer ioctl_command:%u", ioctl_command);
+                    return -EFAULT;
+                }
+            }
+            else
+            {
+                pr_warn("No action for HHGD_RELAY_IN2");
             }
         }
         break;
     case HHGD_RELAY_IN3:
         {
-            if(copy_from_user(&hhgd_relay_in3, arg_ptr, sizeof(hhgd_relay_in3)))
+            if(ioctl_command & HHGD_READ)
             {
-                pr_err("Failed to copy from user space buffer");
-                return -EFAULT;
+                if(copy_to_user(arg_ptr, &hhgd_relay_in3, sizeof(hhgd_relay_in3)))
+                {
+                    pr_err("Failed to copy from kernel space buffer ioctl_command:%u", ioctl_command);
+                    return -EFAULT;
+                }
+            }
+            else if(ioctl_command & HHGD_WRITE)
+            {
+                if(copy_from_user(&hhgd_relay_in3, arg_ptr, sizeof(hhgd_relay_in3)))
+                {
+                    pr_err("Failed to copy from user space buffer ioctl_command:%u", ioctl_command);
+                    return -EFAULT;
+                }
+            }
+            else
+            {
+                pr_warn("No action for HHGD_RELAY_IN3");
             }
         }
         break;
     case HHGD_RELAY_IN4:
         {
-            if(copy_from_user(&hhgd_relay_in4, arg_ptr, sizeof(hhgd_relay_in4)))
+            if(ioctl_command & HHGD_READ)
             {
-                pr_err("Failed to copy from user space buffer");
-                return -EFAULT;
+                if(copy_to_user(arg_ptr, &hhgd_relay_in4, sizeof(hhgd_relay_in4)))
+                {
+                    pr_err("Failed to copy from kernel space buffer ioctl_command:%u", ioctl_command);
+                    return -EFAULT;
+                }
+            }
+            else if(ioctl_command & HHGD_WRITE)
+            {
+                if(copy_from_user(&hhgd_relay_in4, arg_ptr, sizeof(hhgd_relay_in4)))
+                {
+                    pr_err("Failed to copy from user space buffer ioctl_command:%u", ioctl_command);
+                    return -EFAULT;
+                }
+            }
+            else
+            {
+                pr_warn("No action for HHGD_RELAY_IN4");
             }
         }
         break;
     case HHGD_LED_GREEN:
         {
-            if(copy_from_user(&hhgd_led_green, arg_ptr, sizeof(hhgd_led_green)))
+            if(ioctl_command & HHGD_READ)
             {
-                pr_err("Failed to copy from user space buffer");
-                return -EFAULT;
+                if(copy_to_user(arg_ptr, &hhgd_led_green, sizeof(hhgd_led_green)))
+                {
+                    pr_err("Failed to copy from kernel space buffer ioctl_command:%u", ioctl_command);
+                    return -EFAULT;
+                }
+            }
+            else if(ioctl_command & HHGD_WRITE)
+            {
+                if(copy_from_user(&hhgd_led_green, arg_ptr, sizeof(hhgd_led_green)))
+                {
+                    pr_err("Failed to copy from user space buffer ioctl_command:%u", ioctl_command);
+                    return -EFAULT;
+                }
+            }
+            else
+            {
+                pr_warn("No action for HHGD_LED_GREEN");
             }
         }
         break;
     case HHGD_LED_RED:
         {
-            if(copy_from_user(&hhgd_led_red, arg_ptr, sizeof(hhgd_led_red)))
+            if(ioctl_command & HHGD_READ)
             {
-                pr_err("Failed to copy from user space buffer");
-                return -EFAULT;
+                if(copy_to_user(arg_ptr, &hhgd_led_red, sizeof(hhgd_led_red)))
+                {
+                    pr_err("Failed to copy from kernel space buffer ioctl_command:%u", ioctl_command);
+                    return -EFAULT;
+                }
+            }
+            else if(ioctl_command & HHGD_WRITE)
+            {
+                if(copy_from_user(&hhgd_led_red, arg_ptr, sizeof(hhgd_led_red)))
+                {
+                    pr_err("Failed to copy from user space buffer ioctl_command:%u", ioctl_command);
+                    return -EFAULT;
+                }
+            }
+            else
+            {
+                pr_warn("No action for HHGD_LED_RED");
             }
         }
         break;
     case HHGD_LCD:
         {
-            if(copy_from_user(hhgd_lcd, arg_ptr, sizeof(hhgd_lcd)))
+            if(ioctl_command & HHGD_READ)
             {
-                pr_err("Failed to copy from user space buffer");
-                return -EFAULT;
+                if(copy_to_user(arg_ptr, hhgd_lcd, sizeof(hhgd_lcd)))
+                {
+                    pr_err("Failed to copy from kernel space buffer ioctl_command:%u", ioctl_command);
+                    return -EFAULT;
+                }
             }
+            else if(ioctl_command & HHGD_WRITE)
+            {
+                if(copy_from_user(hhgd_lcd, arg_ptr, sizeof(hhgd_lcd)))
+                {
+                    pr_err("Failed to copy from user space buffer ioctl_command:%u", ioctl_command);
+                    return -EFAULT;
+                }
+            }
+            else
+            {
+                pr_warn("No action for HHGD_LED_RED");
+            }
+
         }
         break;
     }

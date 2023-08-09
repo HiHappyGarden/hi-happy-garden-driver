@@ -42,6 +42,13 @@ enum hhgd_type
     HHGD_BUTTON_BEFORE,
     HHGD_LCD,
     HHGD_NONE,
+    HHGD_MASK = 0x0F,
+};
+
+enum hhgd_action
+{
+    HHGD_READ = 0x40,
+    HHGD_WRITE = 0x80,
 };
 
 #endif
