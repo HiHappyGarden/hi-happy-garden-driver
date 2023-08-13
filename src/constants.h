@@ -27,6 +27,8 @@
 #define HHGD_MINOR_NUM_COUNT (1)
 #define HHGD_SIGETX 10
 
+#warning Develop watchdog
+
 typedef unsigned char u8;
 typedef void* hhgd_ptr;
 
